@@ -2,6 +2,8 @@
 
 use App\Livewire\Forms\LoginForm;
 use App\Models\Setting;
+use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Livewire\Attributes\Layout;
 use Livewire\Volt\Component;
@@ -10,6 +12,8 @@ new #[Layout('layouts.guest')] class extends Component
 {
     public LoginForm $form;
     public array $allowedMethods = [];
+    public bool $showDevTools = false;
+    public array $demoUsers = [];
 
     public function mount(): void
     {
@@ -20,6 +24,22 @@ new #[Layout('layouts.guest')] class extends Component
             $emailPasswordEnabled ? 'Email/Password' : null,
             $phoneOtpEnabled ? 'Phone OTP' : null,
         ]);
+
+        $this->showDevTools = app()->environment(['local', 'development']);
+
+        if ($this->showDevTools) {
+            try {
+                $this->demoUsers = User::query()
+                    ->select(['id', 'name', 'email', 'phone', 'role'])
+                    ->whereIn('role', ['super_admin', 'library_owner', 'student'])
+                    ->orderByRaw("FIELD(role, 'super_admin', 'library_owner', 'student')")
+                    ->orderBy('id')
+                    ->get()
+                    ->toArray();
+            } catch (\Throwable) {
+                $this->demoUsers = [];
+            }
+        }
     }
 
     /**
@@ -33,6 +53,22 @@ new #[Layout('layouts.guest')] class extends Component
 
         Session::regenerate();
 
+        $this->redirectIntended(default: route('dashboard', absolute: false), navigate: true);
+    }
+
+    public function loginAs(int $userId): void
+    {
+        if (! $this->showDevTools) {
+            abort(403);
+        }
+
+        $user = User::query()
+            ->whereKey($userId)
+            ->whereIn('role', ['super_admin', 'library_owner', 'student'])
+            ->firstOrFail();
+
+        Auth::login($user);
+        Session::regenerate();
         $this->redirectIntended(default: route('dashboard', absolute: false), navigate: true);
     }
 }; ?>
@@ -50,6 +86,46 @@ new #[Layout('layouts.guest')] class extends Component
             @endforelse
         </div>
     </div>
+
+    @if ($showDevTools)
+        <div class="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+            <p class="text-xs font-semibold uppercase tracking-wide text-amber-700">Development Mode</p>
+            <p class="mt-1 text-sm text-amber-800">Demo credentials and one-click login are enabled.</p>
+            <div class="mt-3 overflow-x-auto">
+                <table class="min-w-full text-left text-xs">
+                    <thead>
+                        <tr class="text-amber-700">
+                            <th class="py-1 pr-3 font-semibold">Role</th>
+                            <th class="py-1 pr-3 font-semibold">Email</th>
+                            <th class="py-1 pr-3 font-semibold">Phone</th>
+                            <th class="py-1 pr-3 font-semibold">Password</th>
+                            <th class="py-1 pr-3 font-semibold">Quick Login</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($demoUsers as $user)
+                            <tr class="text-amber-900">
+                                <td class="py-1 pr-3">{{ str_replace('_', ' ', $user['role']) }}</td>
+                                <td class="py-1 pr-3">{{ $user['email'] ?: '-' }}</td>
+                                <td class="py-1 pr-3">{{ $user['phone'] ?: '-' }}</td>
+                                <td class="py-1 pr-3">password123</td>
+                                <td class="py-1 pr-3">
+                                    <button type="button" wire:click="loginAs({{ $user['id'] }})"
+                                        class="inline-flex items-center rounded-md bg-amber-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-amber-500">
+                                        Login
+                                    </button>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="5" class="py-2 text-amber-800">No demo users found. Run demo seeder first.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    @endif
 
     <!-- Session Status -->
     <x-auth-session-status class="mb-4" :status="session('status')" />
