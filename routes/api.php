@@ -12,6 +12,7 @@ Route::post('/login', [AuthController::class , 'login']);
 Route::post('/auth/firebase', [AuthController::class , 'firebaseLogin']);
 
 Route::post('/logout', [AuthController::class , 'logout'])->middleware('auth:sanctum');
+Route::post('/push/token', [AuthController::class, 'updatePushToken'])->middleware('auth:sanctum');
 
 Route::get('/user', function (Request $request) {
     return $request->user();

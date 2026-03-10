@@ -44,7 +44,7 @@
                                     <div class="mt-1 relative rounded-md shadow-sm">
                                         <div
                                             class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <span class="text-gray-500 sm:text-sm">$</span>
+                                            <span class="text-gray-500 sm:text-sm">{{ $global_currency }}</span>
                                         </div>
                                         <input type="number" step="0.01" id="plan_price" wire:model="price"
                                             class="block w-full pl-7 rounded-md border-gray-300 focus:border-gray-900 focus:ring-gray-900 sm:text-sm"

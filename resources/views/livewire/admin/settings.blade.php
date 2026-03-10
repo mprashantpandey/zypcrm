@@ -8,14 +8,27 @@
                 <p class="mt-1 text-sm text-gray-500">Configure your SaaS platform — branding, payments, notifications,
                     and more.</p>
             </div>
+            @php
+                $activeTabLabel = match ($activeTab) {
+                    'general' => 'General',
+                    'branding' => 'Branding',
+                    'seo' => 'SEO & Analytics',
+                    'auth' => 'Authentication',
+                    'mail' => 'SMTP / Email',
+                    'payment' => 'Payment Gateways',
+                    'firebase' => 'Firebase & Push',
+                    'notifications' => 'Notification Channels',
+                    'third_party' => '3rd Party Configs',
+                    'templates' => 'Template Manager',
+                    'app_links' => 'App & Versions',
+                    'modules' => 'Platform Modules',
+                    default => 'Settings',
+                };
+            @endphp
             <div class="hidden sm:flex items-center gap-2">
                 <div class="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm">
                     <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                    <span class="text-xs font-medium text-gray-600">{{ $activeTab === 'general' ? 'General' : ($activeTab
-                        === 'branding' ? 'Branding' : ($activeTab === 'seo' ? 'SEO & Analytics' : ($activeTab === 'auth' ?
-                        'Authentication' : ($activeTab === 'mail' ? 'SMTP / Email' : ($activeTab === 'payment' ? 'Payment
-                        Gateways' : ($activeTab === 'firebase' ? 'Firebase & Push' : ($activeTab === 'app_links' ? 'App &
-                        Versions' : 'Platform Modules'))))))) }}</span>
+                    <span class="text-xs font-medium text-gray-600">{{ $activeTabLabel }}</span>
                 </div>
                 <div class="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm">
                     <span class="inline-block w-2 h-2 rounded-full {{ $schedulerLastRunAt ? 'bg-emerald-500' : 'bg-amber-400' }}"></span>
@@ -200,11 +213,65 @@
                                     class="block text-[11px] {{ $a ? 'text-indigo-200' : 'text-gray-400' }}">FCM Admin
                                     SDK, VAPID</span></span>
                         </button>
+
+                        @php $a = ($activeTab === 'notifications'); @endphp
+                        <button wire:click="switchTab('notifications')"
+                            class="group w-full flex items-center gap-3 px-2.5 py-2.5 mb-1 rounded-xl text-left transition-all {{ $a ? 'bg-indigo-600 shadow-sm' : 'hover:bg-gray-50' }}">
+                            <span
+                                class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center {{ $a ? 'bg-white/20' : 'bg-gray-100 group-hover:bg-gray-200' }}">
+                                <svg class="w-4 h-4 flex-shrink-0 {{ $a ? 'text-white' : 'text-gray-500' }}" fill="none"
+                                    viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                                </svg>
+                            </span>
+                            <span class="flex-1 min-w-0"><span
+                                    class="block text-sm font-medium {{ $a ? 'text-white' : 'text-gray-800' }}">Notification
+                                    Channels</span><span
+                                    class="block text-[11px] {{ $a ? 'text-indigo-200' : 'text-gray-400' }}">Email,
+                                    push, WhatsApp</span></span>
+                        </button>
+
+                        @php $a = ($activeTab === 'third_party'); @endphp
+                        <button wire:click="switchTab('third_party')"
+                            class="group w-full flex items-center gap-3 px-2.5 py-2.5 mb-1 rounded-xl text-left transition-all {{ $a ? 'bg-indigo-600 shadow-sm' : 'hover:bg-gray-50' }}">
+                            <span
+                                class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center {{ $a ? 'bg-white/20' : 'bg-gray-100 group-hover:bg-gray-200' }}">
+                                <svg class="w-4 h-4 flex-shrink-0 {{ $a ? 'text-white' : 'text-gray-500' }}" fill="none"
+                                    viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M8 9l4-4 4 4m0 6l-4 4-4-4m8-6H8" />
+                                </svg>
+                            </span>
+                            <span class="flex-1 min-w-0"><span
+                                    class="block text-sm font-medium {{ $a ? 'text-white' : 'text-gray-800' }}">3rd Party
+                                    Configs</span><span
+                                    class="block text-[11px] {{ $a ? 'text-indigo-200' : 'text-gray-400' }}">Provider
+                                    keys & endpoints</span></span>
+                        </button>
                     </div>
 
                     {{-- SYSTEM group --}}
                     <div class="px-2 pt-3 pb-4 border-t border-gray-100">
                         <p class="px-2 mb-2 text-[9px] font-bold tracking-[0.15em] uppercase text-gray-400">System</p>
+
+                        @php $a = ($activeTab === 'templates'); @endphp
+                        <button wire:click="switchTab('templates')"
+                            class="group w-full flex items-center gap-3 px-2.5 py-2.5 mb-1 rounded-xl text-left transition-all {{ $a ? 'bg-indigo-600 shadow-sm' : 'hover:bg-gray-50' }}">
+                            <span
+                                class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center {{ $a ? 'bg-white/20' : 'bg-gray-100 group-hover:bg-gray-200' }}">
+                                <svg class="w-4 h-4 flex-shrink-0 {{ $a ? 'text-white' : 'text-gray-500' }}" fill="none"
+                                    viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M7 8h10M7 12h8m-8 4h6M5 4h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z" />
+                                </svg>
+                            </span>
+                            <span class="flex-1 min-w-0"><span
+                                    class="block text-sm font-medium {{ $a ? 'text-white' : 'text-gray-800' }}">Template
+                                    Manager</span><span
+                                    class="block text-[11px] {{ $a ? 'text-indigo-200' : 'text-gray-400' }}">Email,
+                                    SMS, WhatsApp</span></span>
+                        </button>
 
                         @php $a = ($activeTab === 'app_links'); @endphp
                         <button wire:click="switchTab('app_links')"
@@ -240,6 +307,26 @@
                                     Modules</span><span
                                     class="block text-[11px] {{ $a ? 'text-indigo-200' : 'text-gray-400' }}">KYC, blog,
                                     support</span></span>
+                        </button>
+
+                        @php $a = ($activeTab === 'embeds'); @endphp
+                        <button wire:click="switchTab('embeds')"
+                            class="group w-full flex items-center gap-3 px-2.5 py-2.5 mt-1 rounded-xl text-left transition-all {{ $a ? 'bg-indigo-600 shadow-sm' : 'hover:bg-gray-50' }}">
+                            <span
+                                class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center {{ $a ? 'bg-white/20' : 'bg-gray-100 group-hover:bg-gray-200' }}">
+                                <svg class="w-4 h-4 flex-shrink-0 {{ $a ? 'text-white' : 'text-gray-500' }}" fill="none"
+                                    viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M4 4h16v4H4zm0 6h10v4H4zm0 6h7v4H4z" />
+                                </svg>
+                            </span>
+                            <span class="flex-1 min-w-0">
+                                <span class="block text-sm font-medium {{ $a ? 'text-white' : 'text-gray-800' }}">Embed
+                                    Codes</span>
+                                <span
+                                    class="block text-[11px] {{ $a ? 'text-indigo-200' : 'text-gray-400' }}">Tawk.to,
+                                    custom JS</span>
+                            </span>
                         </button>
                     </div>
 
@@ -291,6 +378,35 @@
                                         class="mt-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
                                 </div>
                             </div>
+
+                            <div class="rounded-xl border border-gray-200 bg-gray-50/50 p-4">
+                                <h4 class="text-sm font-semibold text-gray-900">Student Leave Policy</h4>
+                                <p class="mt-1 text-xs text-gray-500">Controls subscription extension on leave approval.</p>
+
+                                <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-900">Policy Mode</label>
+                                        <select wire:model="leavePolicyMode"
+                                            class="mt-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                            <option value="none">None (no extension)</option>
+                                            <option value="full">Full (all approved days)</option>
+                                            <option value="capped">Capped (max days / month)</option>
+                                        </select>
+                                        @error('leavePolicyMode')
+                                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-900">Cap Days / Month</label>
+                                        <input type="number" min="0" max="31" wire:model="leavePolicyCapDaysPerMonth"
+                                            @disabled($leavePolicyMode !== 'capped')
+                                            class="mt-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm disabled:bg-gray-100 disabled:text-gray-400">
+                                        @error('leavePolicyCapDaysPerMonth')
+                                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+                                </div>
+                            </div>
                             <div class="flex justify-end border-t border-gray-100 pt-4">
                                 <button type="submit"
                                     class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-500 transition-colors">Save
@@ -308,7 +424,7 @@
                     </div>
                     <div class="p-6">
                         <form wire:submit="saveBranding" class="space-y-6">
-                            <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                            <div class="grid grid-cols-1 gap-6 sm:grid-cols-3">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-900">Application Name</label>
                                     <input type="text" wire:model="appName"
@@ -324,6 +440,27 @@
                                         <input type="text" wire:model="primaryColor"
                                             class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm uppercase font-mono">
                                     </div>
+                                    @error('primaryColor') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-900">Secondary Color (Hex)</label>
+                                    <div class="mt-2 flex items-center gap-3">
+                                        <input type="color" wire:model="secondaryColor"
+                                            class="h-9 w-9 p-0 border-0 rounded cursor-pointer">
+                                        <input type="text" wire:model="secondaryColor"
+                                            class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm uppercase font-mono">
+                                    </div>
+                                    @error('secondaryColor') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                                </div>
+                                <div class="sm:col-span-3">
+                                    <label class="block text-sm font-medium text-gray-900">Accent Color (Hex)</label>
+                                    <div class="mt-2 flex items-center gap-3 max-w-sm">
+                                        <input type="color" wire:model="accentColor"
+                                            class="h-9 w-9 p-0 border-0 rounded cursor-pointer">
+                                        <input type="text" wire:model="accentColor"
+                                            class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm uppercase font-mono">
+                                    </div>
+                                    @error('accentColor') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                                 </div>
                             </div>
 
@@ -899,6 +1036,364 @@
                 </div>
             </div>
 
+            <!-- Notification Channels Tab -->
+            <div
+                class="{{ $activeTab === 'notifications' ? 'block' : 'hidden' }} w-full bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="px-6 py-5 border-b border-gray-100 bg-gray-50/50">
+                    <h3 class="text-base font-semibold text-gray-900">Notification Channels</h3>
+                    <p class="text-sm text-gray-500 mt-1">Enable or disable delivery channels globally for platform notices and system events.</p>
+                </div>
+                <div class="p-6">
+                    <form wire:submit="saveNotifications" class="space-y-6">
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between border-b border-gray-100 pb-4">
+                                <div>
+                                    <label class="text-sm font-bold text-gray-900">Email Notifications</label>
+                                    <p class="text-sm text-gray-500">Send transactional and event notifications over SMTP.</p>
+                                </div>
+                                <input type="checkbox" wire:model="notificationEmailEnabled"
+                                    class="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600">
+                            </div>
+
+                            <div class="flex items-center justify-between border-b border-gray-100 pb-4">
+                                <div>
+                                    <label class="text-sm font-bold text-gray-900">Push Notifications</label>
+                                    <p class="text-sm text-gray-500">Deliver FCM push notifications to web/mobile clients.</p>
+                                </div>
+                                <input type="checkbox" wire:model="notificationPushEnabled"
+                                    class="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600">
+                            </div>
+
+                            <div class="flex items-center justify-between border-b border-gray-100 pb-4">
+                                <div>
+                                    <label class="text-sm font-bold text-gray-900">WhatsApp Notifications</label>
+                                    <p class="text-sm text-gray-500">Send WhatsApp alerts through configured provider integration.</p>
+                                </div>
+                                <input type="checkbox" wire:model="notificationWhatsappEnabled"
+                                    class="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600">
+                            </div>
+                        </div>
+
+                        <div class="rounded-xl border border-gray-200 bg-gray-50/60 p-4 space-y-4">
+                            <div>
+                                <h4 class="text-sm font-semibold text-gray-900">Event Manager</h4>
+                                <p class="text-xs text-gray-500 mt-1">Control which notification event types are allowed to dispatch.</p>
+                            </div>
+
+                            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                <label class="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-3 py-2">
+                                    <span class="text-sm text-gray-700">Notice Broadcast</span>
+                                    <input type="checkbox" wire:model="notificationEventNoticeBroadcastEnabled"
+                                        class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600">
+                                </label>
+
+                                <label class="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-3 py-2">
+                                    <span class="text-sm text-gray-700">Leave Status Updates</span>
+                                    <input type="checkbox" wire:model="notificationEventLeaveStatusEnabled"
+                                        class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600">
+                                </label>
+
+                                <label class="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-3 py-2">
+                                    <span class="text-sm text-gray-700">Fee Due Reminders</span>
+                                    <input type="checkbox" wire:model="notificationEventFeeDueReminderEnabled"
+                                        class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600">
+                                </label>
+
+                                <label class="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-3 py-2">
+                                    <span class="text-sm text-gray-700">Fee Payment Receipt</span>
+                                    <input type="checkbox" wire:model="notificationEventFeePaymentReceiptEnabled"
+                                        class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600">
+                                </label>
+
+                                <label class="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-3 py-2 sm:col-span-2">
+                                    <span class="text-sm text-gray-700">Subscription Expiry Alerts</span>
+                                    <input type="checkbox" wire:model="notificationEventSubscriptionExpiryEnabled"
+                                        class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600">
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end pt-2">
+                            <button type="submit"
+                                class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-500 transition-colors">Save Notification Channels</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 3rd Party Configs Tab -->
+            <div
+                class="{{ $activeTab === 'third_party' ? 'block' : 'hidden' }} w-full bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="px-6 py-5 border-b border-gray-100 bg-gray-50/50">
+                    <h3 class="text-base font-semibold text-gray-900">3rd Party Configurations</h3>
+                    <p class="text-sm text-gray-500 mt-1">Configure external provider credentials. WhatsApp is placeholder-only for now.</p>
+                </div>
+                <div class="p-6">
+                    <form wire:submit="saveThirdPartyConfigs" class="space-y-6">
+                        <div class="flex items-center justify-between border-b border-gray-100 pb-4">
+                            <div>
+                                <label class="text-sm font-bold text-gray-900">Enable WhatsApp Provider</label>
+                                <p class="text-sm text-gray-500">If disabled, WhatsApp messages are skipped even when channel is enabled.</p>
+                            </div>
+                            <input type="checkbox" wire:model="whatsappProviderEnabled"
+                                class="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600">
+                        </div>
+
+                        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 {{ !$whatsappProviderEnabled ? 'opacity-50 pointer-events-none' : '' }}">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-900">Provider Name</label>
+                                <input type="text" wire:model="whatsappProviderName" placeholder="placeholder"
+                                    class="mt-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                @error('whatsappProviderName')
+                                    <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-900">Sender ID / Number</label>
+                                <input type="text" wire:model="whatsappSenderId" placeholder="WABA_SENDER_ID"
+                                    class="mt-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                @error('whatsappSenderId')
+                                    <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="block text-sm font-medium text-gray-900">API Base URL</label>
+                                <input type="url" wire:model="whatsappApiBaseUrl" placeholder="https://api.provider.com/v1"
+                                    class="mt-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                @error('whatsappApiBaseUrl')
+                                    <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="block text-sm font-medium text-gray-900">API Key / Token</label>
+                                <input type="password" wire:model="whatsappApiKey" placeholder="provider_api_key"
+                                    class="mt-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                @error('whatsappApiKey')
+                                    <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <div class="rounded-lg border border-blue-100 bg-blue-50 px-4 py-3">
+                            <p class="text-xs text-blue-800">
+                                This release uses a placeholder WhatsApp sender implementation (logs dispatches only). Replace
+                                <code>App\Services\WhatsappNotificationService</code> with your provider SDK/API when ready.
+                            </p>
+                        </div>
+
+                        <div class="flex justify-end pt-2">
+                            <button type="submit"
+                                class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-500 transition-colors">Save 3rd Party Configs</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Template Manager Tab -->
+            <div
+                class="{{ $activeTab === 'templates' ? 'block' : 'hidden' }} w-full bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="px-6 py-5 border-b border-gray-100 bg-gray-50/50">
+                    <h3 class="text-base font-semibold text-gray-900">Notification Template Manager</h3>
+                    <p class="text-sm text-gray-500 mt-1">Manage reusable templates for email HTML, SMS and WhatsApp with dynamic variables.</p>
+                </div>
+
+                <div class="p-6 space-y-6">
+                    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-900">Event Type</label>
+                            <select wire:model.live="templateEventKey"
+                                class="mt-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                @foreach ($this->templateEvents as $event)
+                                    <option value="{{ $event }}">{{ ucwords(str_replace('_', ' ', $event)) }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-900">Channel</label>
+                            <select wire:model.live="templateChannel"
+                                class="mt-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                <option value="email">Email</option>
+                                <option value="sms">SMS</option>
+                                <option value="whatsapp">WhatsApp</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <form wire:submit="saveTemplate" class="space-y-5">
+                        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-900">Template Name</label>
+                                <input type="text" wire:model.live.debounce.250ms="templateName"
+                                    class="mt-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                            </div>
+                            <div class="flex items-end">
+                                <label class="inline-flex items-center gap-2 text-sm font-medium text-gray-800">
+                                    <input type="checkbox" wire:model="templateIsActive"
+                                        class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600">
+                                    Template enabled
+                                </label>
+                            </div>
+                        </div>
+
+                        @if ($templateChannel === 'email')
+                            <div>
+                                <label class="block text-sm font-medium text-gray-900">Email Subject</label>
+                                <input type="text" wire:model.live.debounce.250ms="templateSubject"
+                                    class="mt-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                            </div>
+                        @endif
+
+                        <div class="grid grid-cols-1 gap-5 lg:grid-cols-2">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-900">
+                                    Template Body {{ $templateChannel === 'email' ? '(HTML supported)' : '(Text)' }}
+                                </label>
+
+                                @if ($templateChannel === 'email')
+                                    <div
+                                        x-data="templateSunEditorComponent({
+                                            body: @entangle('templateBody').live,
+                                            channel: @entangle('templateChannel').live,
+                                            activeTab: @entangle('activeTab').live
+                                        })"
+                                        x-init="init()">
+                                        <div wire:ignore class="mt-2 rounded-md border border-gray-300 bg-white">
+                                            <textarea x-ref="editorHost"></textarea>
+                                        </div>
+                                    </div>
+                                @else
+                                    <textarea wire:model.live.debounce.250ms="templateBody" rows="14"
+                                        class="mt-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm font-mono"></textarea>
+                                @endif
+                                <p class="mt-2 text-xs text-gray-500">Live preview updates while you type.</p>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-900">Live Preview</label>
+                                <div class="mt-2 rounded-md border border-gray-200 bg-gray-50 p-3 min-h-[22rem]">
+                                    @if ($templateChannel === 'email')
+                                        <div class="mb-3 rounded-md border border-gray-200 bg-white px-3 py-2">
+                                            <p class="text-[11px] uppercase tracking-wide text-gray-500">Subject</p>
+                                            <p class="text-sm font-medium text-gray-800">{{ $this->templatePreview['subject'] ?: 'No subject' }}</p>
+                                        </div>
+                                        <div class="rounded-md border border-gray-200 bg-white p-3 overflow-auto max-h-[18rem]">
+                                            {!! $this->templatePreview['body'] !!}
+                                        </div>
+                                    @else
+                                        <div class="rounded-md border border-gray-200 bg-white p-3">
+                                            <p class="text-[11px] uppercase tracking-wide text-gray-500">Text Output</p>
+                                            <pre class="mt-2 whitespace-pre-wrap break-words text-sm text-gray-800 font-mono">{{ $this->templatePreview['body'] }}</pre>
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+                            <p class="text-xs font-semibold text-amber-800">Available Variables</p>
+                            <p class="mt-1 text-xs text-amber-700">
+                                @foreach ($this->templateVariables as $var)
+                                    <code class="bg-amber-100 px-1 rounded">&#123;&#123;{{ $var }}&#125;&#125;</code>
+                                @endforeach
+                            </p>
+                        </div>
+
+                        <div class="flex justify-end">
+                            <button type="submit"
+                                class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-500 transition-colors">Save Template</button>
+                        </div>
+                    </form>
+
+                    <div class="border-t border-gray-100 pt-6 space-y-3">
+                        <h4 class="text-sm font-semibold text-gray-900">Send Test Mail</h4>
+                        <p class="text-xs text-gray-500">Sends current selected Email template with sample data.</p>
+                        <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+                            <input type="email" wire:model="testEmailTo" placeholder="test@example.com"
+                                class="w-full sm:max-w-sm rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                            <button type="button" wire:click="sendTestMail"
+                                class="inline-flex items-center justify-center bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-emerald-500 transition-colors">
+                                Send Test Mail
+                            </button>
+                        </div>
+                        @error('testEmailTo')
+                            <p class="text-xs text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                </div>
+            </div>
+
+            @once
+                <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/suneditor@2.47.8/dist/css/suneditor.min.css">
+                <script src="https://cdn.jsdelivr.net/npm/suneditor@2.47.8/dist/suneditor.min.js"></script>
+                <script>
+                    window.templateSunEditorComponent = function (state) {
+                        return {
+                            ...state,
+                            editor: null,
+                            syncing: false,
+                            init() {
+                                this.$watch('channel', () => this.handleModeChange());
+                                this.$watch('activeTab', () => this.handleModeChange());
+                                this.$watch('body', (value) => this.syncFromLivewire(value));
+                                this.handleModeChange();
+                            },
+                            handleModeChange() {
+                                if (this.activeTab === 'templates' && this.channel === 'email') {
+                                    this.$nextTick(() => this.ensureEditor());
+                                } else {
+                                    this.destroyEditor();
+                                }
+                            },
+                            ensureEditor() {
+                                if (this.editor || typeof SUNEDITOR === 'undefined' || !this.$refs.editorHost) {
+                                    return;
+                                }
+
+                                this.editor = SUNEDITOR.create(this.$refs.editorHost, {
+                                    width: '100%',
+                                    height: '360px',
+                                    buttonList: [
+                                        ['undo', 'redo'],
+                                        ['formatBlock', 'fontSize'],
+                                        ['bold', 'italic', 'underline', 'strike'],
+                                        ['fontColor', 'hiliteColor'],
+                                        ['align', 'list', 'lineHeight'],
+                                        ['link', 'table'],
+                                        ['codeView', 'preview', 'fullScreen'],
+                                    ],
+                                });
+
+                                this.editor.onChange = (contents) => {
+                                    if (this.syncing) return;
+                                    if ((this.body || '') !== contents) {
+                                        this.body = contents;
+                                    }
+                                };
+
+                                this.syncFromLivewire(this.body || '');
+                            },
+                            syncFromLivewire(value) {
+                                if (!this.editor) return;
+                                const incoming = value || '';
+                                const current = this.editor.getContents() || '';
+                                if (incoming === current) return;
+
+                                this.syncing = true;
+                                this.editor.setContents(incoming);
+                                this.syncing = false;
+                            },
+                            destroyEditor() {
+                                if (!this.editor) return;
+                                if (typeof this.editor.destroy === 'function') {
+                                    this.editor.destroy();
+                                }
+                                this.editor = null;
+                            },
+                        };
+                    };
+                </script>
+            @endonce
+
             <!-- App Links Tab -->
                 <div
                     class="{{ $activeTab === 'app_links' ? 'block' : 'hidden' }} w-full bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -951,28 +1446,14 @@
             </div>
 
             <!-- Modules Tab -->
-                <div
-                    class="{{ $activeTab === 'modules' ? 'block' : 'hidden' }} w-full bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div
+                class="{{ $activeTab === 'modules' ? 'block' : 'hidden' }} w-full bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 <div class="px-6 py-5 border-b border-gray-100 bg-gray-50/50">
                     <h3 class="text-base font-semibold text-gray-900">Platform Modules</h3>
-                    <p class="text-sm text-gray-500 mt-1">Enable or disable heavy ecosystem packages dynamically.
-                    </p>
+                    <p class="text-sm text-gray-500 mt-1">Enable or disable optional ecosystem modules dynamically.</p>
                 </div>
                 <div class="p-6">
                     <form wire:submit="saveModules" class="space-y-6">
-
-                        <div class="flex items-center justify-between border-b border-gray-100 pb-4">
-                            <div>
-                                <label class="text-sm font-bold text-gray-900">Tenant KYC / Identity
-                                    Verification</label>
-                                <p class="text-sm text-gray-500">Require platform library owners to upload an ID and
-                                    Business License before receiving payments.</p>
-                            </div>
-                            <div class="flex items-center">
-                                <input type="checkbox" wire:model="enableKyc"
-                                    class="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600">
-                            </div>
-                        </div>
 
                         <div class="flex items-center justify-between border-b border-gray-100 pb-4">
                             <div>
@@ -1002,6 +1483,45 @@
                             <button type="submit"
                                 class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-500 transition-colors">Apply
                                 Module Toggles</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Embed Codes Tab -->
+            <div
+                class="{{ $activeTab === 'embeds' ? 'block' : 'hidden' }} w-full bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="px-6 py-5 border-b border-gray-100 bg-gray-50/50">
+                    <h3 class="text-base font-semibold text-gray-900">Embed Codes</h3>
+                    <p class="text-sm text-gray-500 mt-1">Paste third-party JavaScript snippets that should load across
+                        your public and app layouts.</p>
+                </div>
+                <div class="p-6">
+                    <form wire:submit="saveEmbeds" class="space-y-6">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-900">Tawk.to Chat Snippet</label>
+                            <p class="mt-1 text-xs text-gray-500">Paste the full Tawk.to embed script here. It will be
+                                injected just before <code>&lt;/body&gt;</code> on public, auth, and dashboard layouts.
+                            </p>
+                            <textarea wire:model.defer="tawkToEmbedCode" rows="6"
+                                class="mt-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-xs font-mono"
+                                placeholder="&lt;script type=&quot;text/javascript&quot;...&gt;&lt;/script&gt;"></textarea>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-900">Custom Analytics / JS</label>
+                            <p class="mt-1 text-xs text-gray-500">Use this for Google Analytics, Meta Pixel, or any
+                                other custom JavaScript that should run on all pages.</p>
+                            <textarea wire:model.defer="analyticsCustomJs" rows="6"
+                                class="mt-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-xs font-mono"
+                                placeholder="&lt;script&gt;/* analytics code */&lt;/script&gt;"></textarea>
+                        </div>
+
+                        <div class="flex justify-end border-t border-gray-100 pt-4">
+                            <button type="submit"
+                                class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-500 transition-colors">
+                                Save Embed Codes
+                            </button>
                         </div>
                     </form>
                 </div>

@@ -31,6 +31,7 @@
                         <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Status</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Method</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Transaction</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Action</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100 bg-white">
@@ -46,10 +47,24 @@
                         </td>
                         <td class="px-6 py-3 text-sm text-gray-700">{{ $payment->payment_method ?: '-' }}</td>
                         <td class="px-6 py-3 text-sm text-gray-500">{{ $payment->transaction_id ?: '-' }}</td>
+                        <td class="px-6 py-3 text-sm">
+                            @if (in_array($payment->status, ['pending', 'overdue'], true) && $payment->slug)
+                                <a href="{{ route('public.pay', $payment->slug) }}"
+                                    class="inline-flex items-center rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-500">
+                                    Pay Now
+                                </a>
+                            @elseif ($payment->status === 'paid')
+                                <span class="inline-flex items-center rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700">
+                                    Paid
+                                </span>
+                            @else
+                                <span class="text-xs text-gray-400">Unavailable</span>
+                            @endif
+                        </td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="5" class="px-6 py-8 text-center text-sm text-gray-500">No fee payments found.</td>
+                        <td colspan="6" class="px-6 py-8 text-center text-sm text-gray-500">No fee payments found.</td>
                     </tr>
                     @endforelse
                 </tbody>

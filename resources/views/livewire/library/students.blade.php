@@ -2,7 +2,7 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         <!-- Header -->
-        <div class="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div class="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4" data-tour="students.header">
             <div>
                 <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Student Management</h1>
                 <p class="mt-1 text-sm text-gray-500">Manage your library's students, assign seats, and track their
@@ -28,6 +28,16 @@
                             d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                     Export
+                </button>
+                <button type="button"
+                    x-on:click="window.dispatchEvent(new CustomEvent('start-tour', { detail: { title: 'Students Page Tour', steps: [
+                        'Search students by name, phone, or email.',
+                        'Use Add Student to create or link existing students from other libraries.',
+                        'Choose re-admission due handling before saving a returning student.',
+                        'Use Profile and ID card actions for quick operations.'
+                    ] } }))"
+                    class="inline-flex items-center justify-center rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-700 shadow-sm hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors">
+                    Quick Tour
                 </button>
                 <button wire:click="openModal"
                     class="inline-flex items-center justify-center rounded-lg border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors">
@@ -271,6 +281,52 @@
                                         @error('password') <span class="text-sm text-red-500 mt-1 block text-left">{{
                                             $message }}</span> @enderror
                                     </div>
+
+                                    @if(!$studentId)
+                                    <div class="text-left rounded-lg border border-amber-200 bg-amber-50 p-3">
+                                        <label for="readmissionDueMode" class="block text-sm font-medium leading-6 text-amber-900">
+                                            Re-admission Dues Handling
+                                        </label>
+                                        <p class="mt-1 text-xs text-amber-800">
+                                            If this phone/email belongs to an existing student, choose how previous dues should be handled.
+                                        </p>
+                                        <div class="mt-2">
+                                            <select wire:model="readmissionDueMode" id="readmissionDueMode"
+                                                class="block w-full rounded-lg border-amber-200 py-2 text-amber-900 shadow-sm focus:border-amber-400 focus:ring-amber-400 sm:text-sm">
+                                                <option value="keep">Keep previous pending dues as-is</option>
+                                                <option value="carry_forward">Carry forward dues into a new pending invoice</option>
+                                                <option value="waive">Waive previous pending dues on re-admission</option>
+                                            </select>
+                                        </div>
+                                        @error('readmissionDueMode') <span class="text-sm text-red-500 mt-1 block text-left">{{ $message }}</span> @enderror
+                                    </div>
+                                    @endif
+
+                                    @if(!$studentId)
+                                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 text-left rounded-lg border border-indigo-200 bg-indigo-50/50 p-3">
+                                        <div>
+                                            <label for="promoCodeInput" class="block text-sm font-medium leading-6 text-indigo-900">Promo Code</label>
+                                            <input type="text" wire:model="promoCodeInput" id="promoCodeInput"
+                                                class="mt-2 block w-full rounded-lg border-indigo-200 py-2 text-indigo-900 shadow-sm focus:border-indigo-400 focus:ring-indigo-400 sm:text-sm"
+                                                placeholder="Optional discount code">
+                                            @error('promoCodeInput') <span class="text-sm text-red-500 mt-1 block text-left">{{ $message }}</span> @enderror
+                                        </div>
+                                        <div>
+                                            <label for="referralCodeInput" class="block text-sm font-medium leading-6 text-indigo-900">Referral Code</label>
+                                            <input type="text" wire:model="referralCodeInput" id="referralCodeInput"
+                                                class="mt-2 block w-full rounded-lg border-indigo-200 py-2 text-indigo-900 shadow-sm focus:border-indigo-400 focus:ring-indigo-400 sm:text-sm"
+                                                placeholder="Optional student referral code">
+                                            @error('referralCodeInput') <span class="text-sm text-red-500 mt-1 block text-left">{{ $message }}</span> @enderror
+                                        </div>
+                                        <div class="sm:col-span-2">
+                                            <label class="inline-flex items-center gap-2">
+                                                <input type="checkbox" wire:model="useReferralCredit"
+                                                    class="rounded border-indigo-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                                <span class="text-xs font-medium text-indigo-900">Apply available referral credit (if any) to first invoice</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    @endif
 
                                     <div class="mt-4 pt-4 border-t border-gray-100 space-y-4">
                                         <h4 class="text-sm font-medium text-gray-900">Subscription & Allocation</h4>

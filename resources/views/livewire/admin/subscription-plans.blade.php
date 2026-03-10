@@ -67,7 +67,7 @@
                             </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="text-sm font-medium text-gray-900">${{ $plan->price }}</span>
+                            <span class="text-sm font-medium text-gray-900">{{ $global_currency }}{{ number_format((float) $plan->price, 2) }}</span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">
                             {{ $plan->billing_cycle }}

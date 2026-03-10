@@ -18,6 +18,13 @@ class User extends Authenticatable
     protected static function booted(): void
     {
         static::created(function (User $user): void {
+            if (empty($user->referral_code)) {
+                do {
+                    $code = strtoupper(\Illuminate\Support\Str::random(8));
+                } while (User::query()->where('referral_code', $code)->exists());
+                $user->forceFill(['referral_code' => $code])->saveQuietly();
+            }
+
             if ($user->role === 'student' && $user->tenant_id) {
                 StudentMembership::updateOrCreate(
                     ['user_id' => $user->id, 'tenant_id' => $user->tenant_id],
@@ -45,7 +52,9 @@ class User extends Authenticatable
         'name',
         'email',
         'phone',
+        'referral_code',
         'firebase_uid',
+        'fcm_token',
         'password',
         'role',
         'tenant_id',

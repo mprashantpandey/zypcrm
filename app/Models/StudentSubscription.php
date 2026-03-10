@@ -30,6 +30,11 @@ class StudentSubscription extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function tenant()
+    {
+        return $this->belongsTo(Tenant::class);
+    }
+
     public function plan()
     {
         return $this->belongsTo(LibraryPlan::class , 'library_plan_id');

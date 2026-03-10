@@ -44,43 +44,43 @@ new #[Layout('layouts.guest')] class extends Component
 
 <div>
     <div class="mb-6">
-        <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Create Account</h1>
-        <p class="mt-1 text-sm text-gray-500">Register a new account to get started.</p>
+        <h1 class="text-2xl font-bold tracking-tight text-slate-900">Create your workspace</h1>
+        <p class="mt-1 text-sm text-slate-500">Set up an account to start managing your study library.</p>
     </div>
 
     <form wire:submit="register" class="space-y-5">
         <!-- Name -->
         <div>
-            <label for="name" class="block text-sm font-medium text-gray-900">Name</label>
+            <label for="name" class="block text-sm font-medium text-slate-900">Name</label>
             <input wire:model="name" id="name"
-                class="mt-2 block w-full rounded-lg border-0 px-3 py-2.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-600 sm:text-sm"
+                class="mt-2 block w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
                 type="text" name="name" required autofocus autocomplete="name" />
             <x-input-error :messages="$errors->get('name')" class="mt-2" />
         </div>
 
         <!-- Email Address -->
         <div>
-            <label for="email" class="block text-sm font-medium text-gray-900">Email</label>
+            <label for="email" class="block text-sm font-medium text-slate-900">Email</label>
             <input wire:model="email" id="email"
-                class="mt-2 block w-full rounded-lg border-0 px-3 py-2.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-600 sm:text-sm"
+                class="mt-2 block w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
                 type="email" name="email" required autocomplete="username" />
             <x-input-error :messages="$errors->get('email')" class="mt-2" />
         </div>
 
         <!-- Password -->
         <div>
-            <label for="password" class="block text-sm font-medium text-gray-900">Password</label>
+            <label for="password" class="block text-sm font-medium text-slate-900">Password</label>
             <input wire:model="password" id="password"
-                class="mt-2 block w-full rounded-lg border-0 px-3 py-2.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-600 sm:text-sm"
+                class="mt-2 block w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
                 type="password" name="password" required autocomplete="new-password" />
             <x-input-error :messages="$errors->get('password')" class="mt-2" />
         </div>
 
         <!-- Confirm Password -->
         <div>
-            <label for="password_confirmation" class="block text-sm font-medium text-gray-900">Confirm Password</label>
+            <label for="password_confirmation" class="block text-sm font-medium text-slate-900">Confirm Password</label>
             <input wire:model="password_confirmation" id="password_confirmation"
-                class="mt-2 block w-full rounded-lg border-0 px-3 py-2.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-600 sm:text-sm"
+                class="mt-2 block w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
                 type="password" name="password_confirmation" required autocomplete="new-password" />
             <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
         </div>
@@ -92,7 +92,7 @@ new #[Layout('layouts.guest')] class extends Component
             </a>
 
             <button type="submit"
-                class="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-indigo-300/40 hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
                 {{ __('Register') }}
             </button>
         </div>

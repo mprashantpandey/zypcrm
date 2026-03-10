@@ -23,6 +23,9 @@ class SettingsServiceProvider extends ServiceProvider
             if (\Illuminate\Support\Facades\Schema::hasTable('settings')) {
                 $settings = \App\Models\Setting::all()->pluck('value', 'key')->toArray();
                 \Illuminate\Support\Facades\View::share('globalSettings', $settings);
+                if (!empty($settings['app_name'])) {
+                    config(['app.name' => $settings['app_name']]);
+                }
             }
         }
         catch (\Exception $e) {

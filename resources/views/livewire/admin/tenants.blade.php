@@ -101,7 +101,7 @@
                                 @if($tenant->currentSubscription)
                                 <div class="text-sm text-gray-900 font-medium">{{
                                     $tenant->currentSubscription->plan->name ?? 'Unknown Plan' }}</div>
-                                <div class="text-xs text-gray-500">Rnews: {{ $tenant->currentSubscription->ends_at ?
+                                <div class="text-xs text-gray-500">Renews: {{ $tenant->currentSubscription->ends_at ?
                                     $tenant->currentSubscription->ends_at->format('M d, Y') : 'Auto' }}</div>
                                 @else
                                 <span
@@ -129,10 +129,16 @@
                                 {{ $tenant->created_at->format('M d, Y') }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <button wire:click="toggleStatus({{ $tenant->id }})"
-                                    class="text-gray-400 hover:text-indigo-600 transition-colors font-medium relative group-hover:opacity-100">
-                                    {{ $tenant->status === 'active' ? 'Suspend' : 'Activate' }}
-                                </button>
+                                <div class="inline-flex items-center gap-3">
+                                    <a href="{{ route('admin.tenants.show', $tenant) }}" wire:navigate
+                                        class="text-indigo-600 hover:text-indigo-700 transition-colors font-medium">
+                                        View
+                                    </a>
+                                    <button wire:click="toggleStatus({{ $tenant->id }})"
+                                        class="text-gray-500 hover:text-indigo-600 transition-colors font-medium relative group-hover:opacity-100">
+                                        {{ $tenant->status === 'active' ? 'Suspend' : 'Activate' }}
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                         @empty

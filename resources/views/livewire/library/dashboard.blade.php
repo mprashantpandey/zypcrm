@@ -2,12 +2,22 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         <!-- Header -->
-        <div class="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div class="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+            data-tour="dashboard.header">
             <div>
                 <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Library Overview</h1>
                 <p class="mt-1 text-sm text-gray-500">Monitor your library's seating, students, and fee collections.</p>
             </div>
             <div class="flex items-center gap-3">
+                <button type="button" x-on:click="window.dispatchEvent(new CustomEvent('start-tour', { detail: { title: 'Library Dashboard Tour', steps: [
+                        'Finish setup from the onboarding checklist to unlock smooth operations.',
+                        'Track students, seats, and revenue from top KPI cards.',
+                        'Review weekly trends and attendance from dashboard charts.',
+                        'Use quick actions for student onboarding and fee collection.'
+                    ] } }))"
+                    class="inline-flex items-center justify-center rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-100">
+                    Quick Tour
+                </button>
                 <a href="{{ route('library.students') }}" wire:navigate
                     class="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors">
                     Add Student
@@ -19,8 +29,58 @@
             </div>
         </div>
 
+        @if(!$onboardingComplete && !$onboardingDismissed)
+        <div class="mb-8 rounded-2xl border border-indigo-200 bg-indigo-50/60 p-5" data-tour="dashboard.onboarding">
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div class="flex-1">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-indigo-700">First-time Setup Wizard</p>
+                    <h2 class="mt-1 text-lg font-bold text-indigo-900">Complete onboarding for your library</h2>
+                    <p class="mt-1 text-sm text-indigo-800">Progress: {{ $onboardingProgress }}% complete</p>
+                    <div class="mt-3 h-2 w-full overflow-hidden rounded-full bg-indigo-200">
+                        <div class="h-full rounded-full bg-indigo-600" style="width: {{ $onboardingProgress }}%"></div>
+                    </div>
+                    <ul class="mt-4 space-y-2 text-sm text-indigo-900">
+                        @foreach($onboardingSteps as $step)
+                        <li class="flex items-center justify-between gap-3 rounded-lg bg-white/80 px-3 py-2">
+                            <span class="flex items-center gap-2">
+                                @if($step['done'])
+                                <svg class="h-4 w-4 text-emerald-600" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M5 13l4 4L19 7" />
+                                </svg>
+                                @else
+                                <svg class="h-4 w-4 text-indigo-500" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <circle cx="12" cy="12" r="9" stroke-width="2" />
+                                </svg>
+                                @endif
+                                {{ $step['label'] }}
+                            </span>
+                            @if(!$step['done'])
+                            <a href="{{ $step['route'] }}" wire:navigate
+                                class="text-xs font-semibold text-indigo-700 hover:text-indigo-900">Open</a>
+                            @endif
+                        </li>
+                        @endforeach
+                    </ul>
+                </div>
+                <div class="flex gap-2">
+                    <button wire:click="dismissOnboarding" type="button"
+                        class="rounded-lg border border-indigo-300 bg-white px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-100">
+                        Remind Later
+                    </button>
+                    <button wire:click="markOnboardingComplete" type="button"
+                        class="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-500">
+                        Mark Complete
+                    </button>
+                </div>
+            </div>
+        </div>
+        @endif
+
         <!-- Key Metrics Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8" data-tour="dashboard.kpis">
             <!-- Metric Card 1: Active Students -->
             <div
                 class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col relative overflow-hidden group">
@@ -77,7 +137,8 @@
                 <dt class="text-sm font-medium text-gray-500 truncate flex items-center gap-2">
                     <div class="w-2 h-2 rounded-full bg-amber-500"></div> Revenue Today
                 </dt>
-                <dd class="mt-2 text-3xl font-bold text-gray-900 tracking-tight">{{ $global_currency }}{{ number_format($revenueToday, 2) }}
+                <dd class="mt-2 text-3xl font-bold text-gray-900 tracking-tight">{{ $global_currency }}{{
+                    number_format($revenueToday, 2) }}
                 </dd>
             </div>
         </div>
@@ -113,12 +174,13 @@
                         <div class="flex items-center gap-3">
                             <div
                                 class="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center text-amber-600 font-bold text-sm">
-                                {{ substr(optional($payment->student)->name ?? 'S', 0, 1) }}
+                                {{ substr(optional($payment->user)->name ?? 'S', 0, 1) }}
                             </div>
                             <div>
-                                <p class="text-sm font-medium text-gray-900">{{ optional($payment->student)->name ??
+                                <p class="text-sm font-medium text-gray-900">{{ optional($payment->user)->name ??
                                     'Unknown Student' }}</p>
-                                <p class="text-xs text-gray-500">{{ $global_currency }}{{ number_format($payment->amount, 2) }}</p>
+                                <p class="text-xs text-gray-500">{{ $global_currency }}{{
+                                    number_format($payment->amount, 2) }}</p>
                             </div>
                         </div>
                         <div class="text-right">

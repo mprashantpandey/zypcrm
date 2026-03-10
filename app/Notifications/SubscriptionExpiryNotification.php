@@ -2,6 +2,9 @@
 
 namespace App\Notifications;
 
+use App\Models\Setting;
+use App\Services\NotificationChannelService;
+use App\Services\NotificationTemplateService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -28,6 +31,14 @@ class SubscriptionExpiryNotification extends Notification
      */
     public function via(object $notifiable): array
     {
+        $channelsConfig = app(NotificationChannelService::class);
+        if (
+            ! $channelsConfig->canSend(NotificationChannelService::EVENT_SUBSCRIPTION_EXPIRY, 'email')
+            || empty($notifiable->email)
+        ) {
+            return [];
+        }
+
         return ['mail'];
     }
 
@@ -39,14 +50,24 @@ class SubscriptionExpiryNotification extends Notification
         $tenantName = $this->subscription->tenant->name ?? 'Library';
         $planName = $this->subscription->plan->name ?? 'Plan';
         $expiryDate = \Carbon\Carbon::parse($this->subscription->end_date)->format('M d, Y');
+        $rendered = app(NotificationTemplateService::class)->render(
+            NotificationChannelService::EVENT_SUBSCRIPTION_EXPIRY,
+            'email',
+            [
+                'app_name' => Setting::getValue('app_name', 'ZypCRM'),
+                'site_title' => Setting::getValue('site_title', 'ZypCRM'),
+                'user_name' => $notifiable->name,
+                'tenant_name' => $tenantName,
+                'dashboard_url' => url('/dashboard'),
+                'date' => now()->format('M d, Y'),
+                'plan_name' => $planName,
+                'expiry_date' => $expiryDate,
+            ]
+        );
 
         return (new MailMessage)
-            ->subject("Action Required: Your Library Pass Expires Soon - {$tenantName}")
-            ->greeting("Hello {$notifiable->name},")
-            ->line("This is a friendly reminder that your active subscription ({$planName}) will expire on **{$expiryDate}**.")
-            ->line("To avoid any interruption in your library access and preserve your currently assigned seat, please renew your membership.")
-            ->action('Login to Dashboard', url('/dashboard'))
-            ->line("If you have any questions or have already renewed, please contact the library desk.");
+            ->subject($rendered['subject'] ?: "Action Required: Your Library Pass Expires Soon - {$tenantName}")
+            ->view('emails.dynamic-template', ['html' => $rendered['body']]);
     }
 
     /**

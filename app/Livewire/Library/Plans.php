@@ -3,6 +3,7 @@
 namespace App\Livewire\Library;
 
 use App\Models\LibraryPlan;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -66,6 +67,9 @@ class Plans extends Component
     public function savePlan()
     {
         $validatedData = $this->validate();
+        if (! $this->validatePlanAgainstOperatingHours()) {
+            return;
+        }
 
         if ($this->isEditing) {
             $plan = LibraryPlan::findOrFail($this->editingPlanId);
@@ -93,6 +97,105 @@ class Plans extends Component
 
         $plan->delete();
         session()->flash('message', 'Plan deleted successfully.');
+    }
+
+    private function validatePlanAgainstOperatingHours(): bool
+    {
+        $tenant = Auth::user()?->tenant;
+        $hours = $tenant?->operating_hours;
+
+        if (! is_array($hours) || empty($hours)) {
+            $this->addError('start_time', 'Library operating hours are missing. Configure them in Library Settings before creating/editing plans.');
+
+            return false;
+        }
+
+        $planStart = $this->timeToMinutes($this->start_time ?: '00:00');
+        $planEnd = $this->timeToMinutes($this->end_time ?: '23:59');
+
+        if ($planStart === null || $planEnd === null || $planEnd <= $planStart) {
+            $this->addError('start_time', 'Invalid plan timing. Ensure start/end times are valid and end time is after start time.');
+
+            return false;
+        }
+
+        $openDays = 0;
+        $invalidDays = [];
+        $mismatchDays = [];
+
+        foreach ($hours as $day => $window) {
+            $isClosed = filter_var($window['closed'] ?? false, FILTER_VALIDATE_BOOLEAN);
+            if ($isClosed) {
+                continue;
+            }
+
+            $openDays++;
+            $openRaw = $window['open'] ?? null;
+            $closeRaw = $window['close'] ?? null;
+            $openMinutes = $this->timeToMinutes($openRaw);
+            $closeMinutes = $this->timeToMinutes($closeRaw);
+
+            $dayLabel = ucfirst((string) $day);
+            if ($openMinutes === null || $closeMinutes === null || $closeMinutes <= $openMinutes) {
+                $invalidDays[] = $dayLabel;
+                continue;
+            }
+
+            if ($planStart < $openMinutes || $planEnd > $closeMinutes) {
+                $mismatchDays[] = "{$dayLabel} ({$this->formatMinutes($openMinutes)}-{$this->formatMinutes($closeMinutes)})";
+            }
+        }
+
+        if ($openDays === 0) {
+            $this->addError('start_time', 'All operating days are marked closed. Set at least one open day in Library Settings before creating/editing plans.');
+
+            return false;
+        }
+
+        if (! empty($invalidDays)) {
+            $this->addError('start_time', 'Operating hours are invalid for: '.implode(', ', $invalidDays).'. Fix those day windows in Library Settings.');
+
+            return false;
+        }
+
+        if (! empty($mismatchDays)) {
+            $planWindow = $this->formatMinutes($planStart).'-'.$this->formatMinutes($planEnd);
+            $this->addError(
+                'start_time',
+                'Plan timing '.$planWindow.' is outside library operating hours on: '.implode(', ', $mismatchDays).'.'
+            );
+
+            return false;
+        }
+
+        return true;
+    }
+
+    private function timeToMinutes(?string $value): ?int
+    {
+        if ($value === null || trim($value) === '') {
+            return null;
+        }
+
+        if (! preg_match('/^(?<h>\d{2}):(?<m>\d{2})/', trim($value), $parts)) {
+            return null;
+        }
+
+        $h = (int) $parts['h'];
+        $m = (int) $parts['m'];
+        if ($h < 0 || $h > 23 || $m < 0 || $m > 59) {
+            return null;
+        }
+
+        return ($h * 60) + $m;
+    }
+
+    private function formatMinutes(int $minutes): string
+    {
+        $h = intdiv($minutes, 60);
+        $m = $minutes % 60;
+
+        return sprintf('%02d:%02d', $h, $m);
     }
 
     public function render()

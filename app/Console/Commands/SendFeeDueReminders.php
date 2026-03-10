@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\FeePayment;
 use App\Models\Setting;
 use App\Notifications\FeeDueReminderNotification;
+use App\Services\NotificationChannelService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
@@ -17,6 +18,13 @@ class SendFeeDueReminders extends Command
 
     public function handle(): int
     {
+        $channelsConfig = app(NotificationChannelService::class);
+        if (! $channelsConfig->canSend(NotificationChannelService::EVENT_FEE_DUE_REMINDER, 'email')) {
+            $this->info('Fee due reminder event is disabled for email channel.');
+
+            return self::SUCCESS;
+        }
+
         $today = Carbon::today()->toDateString();
         $count = 0;
 

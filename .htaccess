@@ -1,0 +1,19 @@
+<IfModule mod_rewrite.c>
+    Options +FollowSymLinks
+    RewriteEngine On
+
+    # If your Laravel app is inside a subfolder on cPanel,
+    # and the document root points to this folder (not to public/),
+    # this will internally route all requests to public/index.php.
+
+    # Skip if the request is already for the public directory
+    RewriteCond %{REQUEST_URI} !^/public/
+
+    # Skip existing files and directories
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+
+    # Redirect everything else to public/index.php
+    RewriteRule ^(.*)$ public/$1 [L,QSA]
+</IfModule>
+

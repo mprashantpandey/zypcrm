@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\FeePayment;
 use App\Models\LibraryPlan;
+use App\Models\Notice;
 use App\Models\Seat;
 use App\Models\Setting;
 use App\Models\StudentAttendance;
@@ -44,6 +45,7 @@ class DemoDataSeeder extends Seeder
         $this->seedAttendance($tenantA, $tenantB, $studentA1, $studentA2, $studentB1, $studentDual);
         $this->seedLeaves($tenantA, $tenantB, $studentA1, $studentB1);
         $this->seedSupportTickets($ownerA, $ownerB, $superAdmin);
+        $this->seedNotices($superAdmin, $ownerA, $tenantA);
     }
 
     private function truncateData(): void
@@ -63,6 +65,10 @@ class DemoDataSeeder extends Seeder
             'library_plans',
             'subscription_plans',
             'audit_logs',
+            'notices',
+            'notifications',
+            'notification_templates',
+            'tenant_subscription_invoices',
             'personal_access_tokens',
             'sessions',
             'model_has_permissions',
@@ -88,10 +94,25 @@ class DemoDataSeeder extends Seeder
             ['key' => 'site_title', 'value' => 'ZypCRM', 'group' => 'general'],
             ['key' => 'currency', 'value' => 'INR', 'group' => 'general'],
             ['key' => 'currency_symbol', 'value' => '₹', 'group' => 'general'],
+            ['key' => 'leave_policy_mode', 'value' => 'capped', 'group' => 'policy'],
+            ['key' => 'leave_policy_cap_days_per_month', 'value' => '3', 'group' => 'policy'],
             ['key' => 'allow_registration', 'value' => 'true', 'group' => 'auth'],
             ['key' => 'email_password_auth_enabled', 'value' => 'true', 'group' => 'auth'],
             ['key' => 'firebase_enabled', 'value' => 'false', 'group' => 'firebase'],
             ['key' => 'firebase_phone_auth_enabled', 'value' => 'false', 'group' => 'auth'],
+            ['key' => 'notification_email_enabled', 'value' => 'true', 'group' => 'notifications'],
+            ['key' => 'notification_push_enabled', 'value' => 'true', 'group' => 'notifications'],
+            ['key' => 'notification_whatsapp_enabled', 'value' => 'false', 'group' => 'notifications'],
+            ['key' => 'notification_event_notice_broadcast_enabled', 'value' => 'true', 'group' => 'notifications'],
+            ['key' => 'notification_event_leave_status_enabled', 'value' => 'true', 'group' => 'notifications'],
+            ['key' => 'notification_event_fee_due_reminder_enabled', 'value' => 'true', 'group' => 'notifications'],
+            ['key' => 'notification_event_fee_payment_receipt_enabled', 'value' => 'true', 'group' => 'notifications'],
+            ['key' => 'notification_event_subscription_expiry_enabled', 'value' => 'true', 'group' => 'notifications'],
+            ['key' => 'whatsapp_provider_enabled', 'value' => 'false', 'group' => 'third_party'],
+            ['key' => 'whatsapp_provider_name', 'value' => 'placeholder', 'group' => 'third_party'],
+            ['key' => 'whatsapp_api_base_url', 'value' => '', 'group' => 'third_party'],
+            ['key' => 'whatsapp_api_key', 'value' => '', 'group' => 'third_party'],
+            ['key' => 'whatsapp_sender_id', 'value' => '', 'group' => 'third_party'],
             ['key' => 'enable_stripe', 'value' => 'false', 'group' => 'billing'],
             ['key' => 'enable_razorpay', 'value' => 'false', 'group' => 'billing'],
             ['key' => 'enable_manual_payment', 'value' => 'true', 'group' => 'billing'],
@@ -100,6 +121,8 @@ class DemoDataSeeder extends Seeder
         foreach ($settings as $setting) {
             Setting::create($setting);
         }
+
+        app(\App\Services\NotificationTemplateService::class)->seedDefaults();
     }
 
     private function seedPlatformPlans(): array
@@ -467,6 +490,39 @@ class DemoDataSeeder extends Seeder
             'subject' => 'How to migrate old students?',
             'status' => 'open',
             'priority' => 'medium',
+        ]);
+    }
+
+    private function seedNotices(User $superAdmin, User $ownerA, Tenant $tenantA): void
+    {
+        Notice::create([
+            'tenant_id' => null,
+            'created_by' => $superAdmin->id,
+            'title' => 'Platform Maintenance Window',
+            'body' => 'Scheduled maintenance on Sunday 11:30 PM to 12:30 AM IST.',
+            'level' => 'warning',
+            'audience' => 'both',
+            'delivery_in_app' => true,
+            'delivery_email' => false,
+            'delivery_push' => false,
+            'is_active' => true,
+            'starts_at' => now()->subDay(),
+            'ends_at' => now()->addDays(5),
+        ]);
+
+        Notice::create([
+            'tenant_id' => $tenantA->id,
+            'created_by' => $ownerA->id,
+            'title' => 'Library Holiday Notice',
+            'body' => 'Library will remain closed this Friday due to local holiday.',
+            'level' => 'info',
+            'audience' => 'students',
+            'delivery_in_app' => true,
+            'delivery_email' => false,
+            'delivery_push' => false,
+            'is_active' => true,
+            'starts_at' => now()->subDay(),
+            'ends_at' => now()->addDays(7),
         ]);
     }
 }

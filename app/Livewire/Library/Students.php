@@ -11,9 +11,11 @@ use App\Models\StudentMembership;
 use App\Models\StudentSubscription;
 use App\Models\User;
 use App\Services\AuditLogService;
+use App\Services\PromoEngineService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -52,6 +54,11 @@ class Students extends Component
 
     public $planStartDate = '';
 
+    public string $readmissionDueMode = 'keep'; // keep, carry_forward, waive
+    public string $promoCodeInput = '';
+    public string $referralCodeInput = '';
+    public bool $useReferralCredit = true;
+
     public function updatingSearch()
     {
         $this->resetPage();
@@ -79,6 +86,10 @@ class Students extends Component
         $this->assignedSeatId = '';
         $this->libraryPlanId = '';
         $this->planStartDate = date('Y-m-d');
+        $this->readmissionDueMode = 'keep';
+        $this->promoCodeInput = '';
+        $this->referralCodeInput = '';
+        $this->useReferralCredit = true;
     }
 
     public function viewProfile($studentId)
@@ -168,6 +179,7 @@ class Students extends Component
         $actor = Auth::user();
         $isUpdate = (bool) $this->studentId;
         $before = [];
+        $actionMessage = $this->studentId ? 'Student updated successfully.' : 'Student created successfully.';
 
         $rules = [
             'name' => 'required|string|max:255',
@@ -176,6 +188,9 @@ class Students extends Component
             'assignedSeatId' => ['nullable', Rule::exists('seats', 'id')->where(fn ($query) => $query->where('tenant_id', $tenantId))],
             'libraryPlanId' => ['nullable', Rule::exists('library_plans', 'id')->where(fn ($query) => $query->where('tenant_id', $tenantId))],
             'planStartDate' => 'nullable|date',
+            'readmissionDueMode' => 'required|string|in:keep,carry_forward,waive',
+            'promoCodeInput' => 'nullable|string|max:50',
+            'referralCodeInput' => 'nullable|string|max:40',
         ];
 
         if (! $this->studentId) {
@@ -185,6 +200,7 @@ class Students extends Component
         }
 
         $this->validate($rules);
+        $promoEngine = app(PromoEngineService::class);
 
         $studentData = [
             'name' => $this->name,
@@ -217,13 +233,78 @@ class Students extends Component
 
             if ($existingStudent) {
                 $student = $existingStudent;
-                $student->update($studentData);
-                if (! empty($this->password)) {
-                    $student->update(['password' => Hash::make($this->password)]);
+
+                // Existing student in another library: attach membership only.
+                $existingMembership = StudentMembership::query()
+                    ->where('user_id', $student->id)
+                    ->where('tenant_id', $tenantId)
+                    ->first();
+                $wasReadmission = $existingMembership !== null && $existingMembership->status !== 'active';
+
+                $membership = StudentMembership::firstOrCreate(
+                    ['user_id' => $student->id, 'tenant_id' => $tenantId],
+                    ['status' => 'active', 'joined_at' => now()]
+                );
+
+                if (! $membership->wasRecentlyCreated && $membership->status !== 'active') {
+                    $membership->update([
+                        'status' => 'active',
+                        'joined_at' => $membership->joined_at ?? now(),
+                    ]);
                 }
+
+                $outstandingDue = (float) FeePayment::query()
+                    ->where('tenant_id', $tenantId)
+                    ->where('user_id', $student->id)
+                    ->whereIn('status', ['pending', 'overdue'])
+                    ->sum('amount');
+
+                if ($wasReadmission && $outstandingDue > 0) {
+                    if ($this->readmissionDueMode === 'carry_forward') {
+                        FeePayment::create([
+                            'tenant_id' => $tenantId,
+                            'user_id' => $student->id,
+                            'amount' => $outstandingDue,
+                            'payment_date' => Carbon::today(),
+                            'status' => 'pending',
+                            'payment_method' => 'cash',
+                            'platform_fee_amount' => 0,
+                            'net_amount' => $outstandingDue,
+                            'remarks' => 'Readmission carry-forward dues consolidation.',
+                        ]);
+                    } elseif ($this->readmissionDueMode === 'waive') {
+                        FeePayment::query()
+                            ->where('tenant_id', $tenantId)
+                            ->where('user_id', $student->id)
+                            ->whereIn('status', ['pending', 'overdue'])
+                            ->update([
+                                'status' => 'paid',
+                                'remarks' => \Illuminate\Support\Facades\DB::raw("CONCAT(IFNULL(remarks,''), ' | waived on readmission')"),
+                            ]);
+                    }
+                }
+
+                $msg = 'Existing student linked to this library.';
+                if ($wasReadmission) {
+                    $msg .= ' Re-admission processed';
+                    if ($outstandingDue > 0 && $this->readmissionDueMode === 'carry_forward') {
+                        $msg .= ' with due carry-forward.';
+                    } elseif ($outstandingDue > 0 && $this->readmissionDueMode === 'waive') {
+                        $msg .= ' with due waiver.';
+                    } else {
+                        $msg .= '.';
+                    }
+                }
+
+                $promoEngine->registerReferralIfApplicable($tenantId, $student->id, $this->referralCodeInput);
+                $this->dispatch('notify', ['type' => 'success', 'message' => $msg]);
+                $this->closeModal();
+
+                return;
             } else {
                 $studentData['tenant_id'] = $tenantId;
                 $student = User::create($studentData);
+                $promoEngine->registerReferralIfApplicable($tenantId, $student->id, $this->referralCodeInput);
             }
         }
 
@@ -280,17 +361,19 @@ class Students extends Component
                     // doesn't duplicate invoices unless the plan actually changed, or if it's a renewal.
                     // To be safe against double-billing, we only generate a new invoice if the plan changes.
                     if ($oldPlanId != $this->libraryPlanId) {
-                        FeePayment::create([
-                            'tenant_id' => $tenantId,
-                            'user_id' => $student->id,
-                            'amount' => $plan->price,
-                            'payment_date' => Carbon::today(),
-                            'status' => 'pending',
-                            'payment_method' => 'cash', // Default placeholder
-                            'platform_fee_amount' => 0,
-                            'net_amount' => $plan->price,
-                            'remarks' => 'Automated invoice for '.$plan->name.' plan change.',
-                        ]);
+                        $invoice = $this->createAutomatedPlanInvoice(
+                            tenantId: $tenantId,
+                            studentId: $student->id,
+                            planName: $plan->name,
+                            grossAmount: (float) $plan->price,
+                            promoEngine: $promoEngine,
+                            remarksPrefix: 'Automated invoice for '.$plan->name.' plan change.'
+                        );
+                        if (! $invoice['ok']) {
+                            $this->addError('promoCodeInput', $invoice['message'] ?? 'Invalid promo settings.');
+
+                            return;
+                        }
                     }
                 } else {
                     // Create new subscription
@@ -305,17 +388,19 @@ class Students extends Component
                     ]);
 
                     // Generate Automated Invoice for the new Subscription
-                    FeePayment::create([
-                        'tenant_id' => $tenantId,
-                        'user_id' => $student->id,
-                        'amount' => $plan->price,
-                        'payment_date' => Carbon::today(),
-                        'status' => 'pending',
-                        'payment_method' => 'cash', // Default placeholder until paid
-                        'platform_fee_amount' => 0,
-                        'net_amount' => $plan->price,
-                        'remarks' => 'Automated invoice for '.$plan->name.' subscription.',
-                    ]);
+                    $invoice = $this->createAutomatedPlanInvoice(
+                        tenantId: $tenantId,
+                        studentId: $student->id,
+                        planName: $plan->name,
+                        grossAmount: (float) $plan->price,
+                        promoEngine: $promoEngine,
+                        remarksPrefix: 'Automated invoice for '.$plan->name.' subscription.'
+                    );
+                    if (! $invoice['ok']) {
+                        $this->addError('promoCodeInput', $invoice['message'] ?? 'Invalid promo settings.');
+
+                        return;
+                    }
                 }
             }
         } else {
@@ -339,8 +424,65 @@ class Students extends Component
             );
         }
 
-        $this->dispatch('notify', ['type' => 'success', 'message' => $this->studentId ? 'Student updated successfully.' : 'Student created successfully.']);
+        $this->dispatch('notify', ['type' => 'success', 'message' => $actionMessage]);
         $this->closeModal();
+    }
+
+    private function createAutomatedPlanInvoice(
+        int $tenantId,
+        int $studentId,
+        string $planName,
+        float $grossAmount,
+        PromoEngineService $promoEngine,
+        string $remarksPrefix
+    ): array {
+        $promoApply = $promoEngine->applyPromo($tenantId, $this->promoCodeInput, $grossAmount);
+        if (! empty($promoApply['error'])) {
+            return ['ok' => false, 'message' => $promoApply['error']];
+        }
+
+        $creditUse = ['used' => 0.0, 'net' => (float) $promoApply['net']];
+        if ($this->useReferralCredit && Schema::hasTable('referral_credits')) {
+            $creditUse = $promoEngine->applyReferralCredit($tenantId, $studentId, (float) $promoApply['net']);
+        }
+
+        $remarks = $remarksPrefix;
+        if ((float) $promoApply['discount'] > 0) {
+            $remarks .= ' Promo '.$promoApply['promo']?->code.' applied ('.$promoApply['discount'].').';
+        }
+        if ((float) $creditUse['used'] > 0) {
+            $remarks .= ' Referral credit used ('.$creditUse['used'].').';
+        }
+
+        $payload = [
+            'tenant_id' => $tenantId,
+            'user_id' => $studentId,
+            'amount' => (float) $creditUse['net'],
+            'payment_date' => Carbon::today(),
+            'status' => 'pending',
+            'payment_method' => 'cash',
+            'platform_fee_amount' => 0,
+            'net_amount' => (float) $creditUse['net'],
+            'remarks' => $remarks,
+        ];
+
+        if (Schema::hasColumn('fee_payments', 'gross_amount')) {
+            $payload['gross_amount'] = $grossAmount;
+        }
+        if (Schema::hasColumn('fee_payments', 'discount_amount')) {
+            $payload['discount_amount'] = (float) $promoApply['discount'];
+        }
+        if (Schema::hasColumn('fee_payments', 'referral_credit_used')) {
+            $payload['referral_credit_used'] = (float) $creditUse['used'];
+        }
+        if (Schema::hasColumn('fee_payments', 'promo_code_id')) {
+            $payload['promo_code_id'] = $promoApply['promo']?->id;
+        }
+
+        FeePayment::create($payload);
+        $promoEngine->registerPromoUse($promoApply['promo']);
+
+        return ['ok' => true];
     }
 
     public function delete($id)

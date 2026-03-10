@@ -51,10 +51,16 @@
                             </td>
                             <td class="px-6 py-4 text-sm text-gray-500">{{ $student->created_at->format('M d, Y') }}</td>
                             <td class="px-6 py-4 text-right">
-                                <button wire:click="openMembershipManager({{ $student->id }})"
-                                    class="inline-flex items-center rounded-lg bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100">
-                                    Manage Libraries
-                                </button>
+                                <div class="inline-flex items-center gap-2">
+                                    <a href="{{ route('admin.students.show', $student) }}" wire:navigate
+                                        class="inline-flex items-center rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200">
+                                        View
+                                    </a>
+                                    <button wire:click="openMembershipManager({{ $student->id }})"
+                                        class="inline-flex items-center rounded-lg bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100">
+                                        Manage Libraries
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                         @empty

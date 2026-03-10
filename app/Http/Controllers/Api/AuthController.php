@@ -210,4 +210,20 @@ class AuthController extends Controller
 
         return response()->json(['message' => 'Logged out successfully']);
     }
+
+    public function updatePushToken(Request $request)
+    {
+        $validated = $request->validate([
+            'fcm_token' => 'nullable|string|max:1000',
+        ]);
+
+        $request->user()->update([
+            'fcm_token' => $validated['fcm_token'] ?? null,
+        ]);
+
+        return response()->json([
+            'message' => 'Push token updated successfully',
+            'fcm_token' => $request->user()->fcm_token,
+        ]);
+    }
 }

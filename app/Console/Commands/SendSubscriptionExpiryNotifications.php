@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Setting;
+use App\Services\NotificationChannelService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 
@@ -27,6 +28,13 @@ class SendSubscriptionExpiryNotifications extends Command
      */
     public function handle()
     {
+        $channelsConfig = app(NotificationChannelService::class);
+        if (! $channelsConfig->canSend(NotificationChannelService::EVENT_SUBSCRIPTION_EXPIRY, 'email')) {
+            $this->info('Subscription expiry notification event is disabled for email channel.');
+
+            return self::SUCCESS;
+        }
+
         $targetDate = \Carbon\Carbon::today()->addDays(3);
 
         $subscriptions = \App\Models\StudentSubscription::with(['user', 'plan', 'tenant'])

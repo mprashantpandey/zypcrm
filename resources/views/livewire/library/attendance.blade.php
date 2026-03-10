@@ -1,134 +1,239 @@
-<div class="py-10">
-    <div class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        <div class="sm:flex sm:items-center">
-            <div class="sm:flex-auto">
-                <h1 class="text-2xl font-bold leading-6 text-gray-900">Attendance</h1>
-                <p class="mt-2 text-sm text-gray-600">Manage daily attendance and time-tracking for your students.</p>
+<div class="py-8" x-data x-init="
+    const makeFingerprint = () => {
+        const raw = [navigator.userAgent, navigator.language, window.screen.width + 'x' + window.screen.height, Intl.DateTimeFormat().resolvedOptions().timeZone].join('|');
+        return btoa(unescape(encodeURIComponent(raw))).replace(/=+$/,'').slice(0, 64);
+    };
+    $wire.set('deviceFingerprint', makeFingerprint());
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition((pos) => {
+            $wire.set('operatorLatitude', Number(pos.coords.latitude.toFixed(7)));
+            $wire.set('operatorLongitude', Number(pos.coords.longitude.toFixed(7)));
+        });
+    }
+">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-6">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between" data-tour="attendance.header">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-900">Mark Attendance</h1>
+                <p class="mt-1 text-sm text-slate-500">Search students, select multiple, then mark Present/Absent/Login/Clockout.</p>
             </div>
-            <div class="mt-4 sm:ml-16 sm:mt-0 sm:flex-none flex items-center gap-4">
-                <div class="relative">
-                    <label for="attendanceDate" class="sr-only">Date</label>
-                    <input type="date" id="attendanceDate" wire:model.live="attendanceDate"
-                        class="block w-full rounded-lg border-0 py-2.5 pl-3 pr-4 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 font-medium cursor-pointer">
+            <div class="flex items-center gap-2">
+                <button type="button"
+                    x-on:click="window.dispatchEvent(new CustomEvent('start-tour', { detail: { title: 'Mark Attendance Tour', steps: [
+                        'Select date and search students from the top filters.',
+                        'Use bulk actions after selecting one or more students.',
+                        'Conflict resolver appears when overlapping attendance is detected.',
+                        'Use Attendance View for audit and historical records.'
+                    ] } }))"
+                    class="inline-flex items-center justify-center rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-sm font-semibold text-indigo-700 hover:bg-indigo-100">
+                    Quick Tour
+                </button>
+                <a href="{{ route('library.attendance') }}" wire:navigate
+                    class="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                    Attendance View
+                </a>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div class="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Security Checks</p>
+                <div class="mt-2 flex flex-wrap gap-2 text-xs">
+                    <span class="inline-flex rounded-full px-2.5 py-1 font-semibold {{ $securityEnabled['ip'] ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600' }}">IP {{ $securityEnabled['ip'] ? 'On' : 'Off' }}</span>
+                    <span class="inline-flex rounded-full px-2.5 py-1 font-semibold {{ $securityEnabled['device'] ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600' }}">Device {{ $securityEnabled['device'] ? 'On' : 'Off' }}</span>
+                    <span class="inline-flex rounded-full px-2.5 py-1 font-semibold {{ $securityEnabled['geofence'] ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600' }}">Geofence {{ $securityEnabled['geofence'] ? 'On' : 'Off' }}</span>
                 </div>
-                <div class="relative">
-                    <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                        <svg class="w-5 h-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd"
-                                d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z"
-                                clip-rule="evenodd" />
-                        </svg>
+            </div>
+            <div class="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Operator Device</p>
+                <p class="mt-2 truncate text-xs text-slate-600">{{ $deviceFingerprint ? substr($deviceFingerprint, 0, 22).'...' : 'Fingerprint pending...' }}</p>
+            </div>
+            <div class="rounded-xl border {{ $missedClockOutCount > 0 ? 'border-amber-200 bg-amber-50' : 'border-slate-200 bg-white' }} px-4 py-3">
+                <p class="text-xs font-semibold uppercase tracking-wide {{ $missedClockOutCount > 0 ? 'text-amber-700' : 'text-slate-500' }}">Missed Clockouts</p>
+                <p class="mt-2 text-sm font-semibold {{ $missedClockOutCount > 0 ? 'text-amber-700' : 'text-slate-700' }}">{{ $missedClockOutCount }} pending from previous dates</p>
+            </div>
+        </div>
+
+        @if ($inlineMessage)
+            <div class="rounded-xl border px-4 py-3 text-sm flex items-start justify-between gap-3
+                {{ $inlineType === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : '' }}
+                {{ $inlineType === 'error' ? 'border-rose-200 bg-rose-50 text-rose-700' : '' }}
+                {{ $inlineType === 'warning' ? 'border-amber-200 bg-amber-50 text-amber-700' : '' }}">
+                <span>{{ $inlineMessage }}</span>
+                <button type="button" wire:click="clearInlineMessage" class="text-xs font-semibold uppercase tracking-wide opacity-80 hover:opacity-100">
+                    Dismiss
+                </button>
+            </div>
+        @endif
+
+        @if(!empty($bulkConflicts))
+            <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4" data-tour="attendance.conflicts">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                        <p class="text-sm font-semibold text-amber-800">Bulk conflict resolver</p>
+                        <p class="mt-1 text-xs text-amber-700">Some rows failed due to overlap/security/validation. Resolve quickly:</p>
                     </div>
-                    <input type="text" wire:model.live.debounce.300ms="search"
-                        class="block w-full rounded-lg border-0 py-2.5 pl-10 pr-4 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                        placeholder="Search students...">
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" wire:click="markConflictRowsAbsent"
+                            class="rounded-lg bg-amber-600 px-3 py-2 text-xs font-semibold text-white hover:bg-amber-500">
+                            Mark Failed as Absent
+                        </button>
+                        <button type="button" wire:click="removeConflictRowsFromSelection"
+                            class="rounded-lg border border-amber-300 bg-white px-3 py-2 text-xs font-semibold text-amber-700 hover:bg-amber-100">
+                            Remove Failed from Selection
+                        </button>
+                        <button type="button" wire:click="clearBulkConflicts"
+                            class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+                            Dismiss
+                        </button>
+                    </div>
+                </div>
+                <div class="mt-3 max-h-48 overflow-auto rounded-xl border border-amber-200 bg-white">
+                    <ul class="divide-y divide-amber-100 text-xs">
+                        @foreach($bulkConflicts as $row)
+                            @php
+                                $student = $students->firstWhere('id', $row['student_id']);
+                            @endphp
+                            <li class="px-3 py-2 text-amber-800">
+                                <span class="font-semibold">{{ $student?->name ?? ('Student #'.$row['student_id']) }}:</span>
+                                {{ $row['message'] }}
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+            </div>
+        @endif
+
+        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm" data-tour="attendance.filters">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div>
+                    <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Attendance Date</label>
+                    <input type="date" wire:model.live="attendanceDate"
+                        class="w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+                <div class="lg:col-span-2">
+                    <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Search Student</label>
+                    <input type="text" wire:model.live.debounce.300ms="search" placeholder="Name or phone"
+                        class="w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+                <div class="flex items-end gap-2">
+                    <button wire:click="selectAllVisible" type="button"
+                        class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+                        Select All
+                    </button>
+                    <button wire:click="clearSelection" type="button"
+                        class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+                        Clear
+                    </button>
+                </div>
+            </div>
+
+            <div class="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3" data-tour="attendance.bulk-actions">
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Bulk Actions ({{ count($selectedStudentIds) }} selected)</p>
+                <div class="mt-2 flex flex-wrap gap-2">
+                    <button wire:click="markSelected('present')" type="button"
+                        class="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-500">
+                        Mark Present
+                    </button>
+                    <button wire:click="markSelected('absent')" type="button"
+                        class="rounded-lg bg-rose-600 px-3 py-2 text-xs font-semibold text-white hover:bg-rose-500">
+                        Mark Absent
+                    </button>
+                    <button wire:click="loginSelected" type="button"
+                        class="rounded-lg bg-sky-600 px-3 py-2 text-xs font-semibold text-white hover:bg-sky-500">
+                        Login (Check In)
+                    </button>
+                    <button wire:click="clockOutSelected" type="button"
+                        class="rounded-lg bg-amber-600 px-3 py-2 text-xs font-semibold text-white hover:bg-amber-500">
+                        Clockout (Check Out)
+                    </button>
                 </div>
             </div>
         </div>
 
-        <div class="mt-8 flow-root">
-            <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-                <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-                    <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-xl bg-white">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50 border-b border-gray-200">
-                                <tr>
-                                    <th scope="col"
-                                        class="py-4 pl-4 pr-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider sm:pl-6">
-                                        Student
-                                    </th>
-                                    <th scope="col"
-                                        class="px-3 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                        Status
-                                    </th>
-                                    <th scope="col"
-                                        class="px-3 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                        Check In
-                                    </th>
-                                    <th scope="col"
-                                        class="px-3 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                        Check Out
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-100 bg-white">
-                                @forelse ($students as $student)
-                                @php
+        <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm" data-tour="attendance.table">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-slate-200">
+                    <thead class="bg-slate-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Select</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Student</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Status</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Check In</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Check Out</th>
+                            <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 bg-white">
+                        @forelse ($students as $student)
+                            @php
                                 $record = $existingAttendances->get($student->id);
-                                $status = $record ? $record->status : null;
-                                $checkIn = $record ? $record->check_in : null;
-                                $checkOut = $record ? $record->check_out : null;
-                                @endphp
-                                <tr class="hover:bg-gray-50/50 transition-colors duration-150">
-                                    <td class="whitespace-nowrap py-4 pl-4 pr-3 sm:pl-6">
-                                        <div class="flex items-center gap-3">
-                                            <div
-                                                class="h-10 w-10 shrink-0 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold">
-                                                {{ substr($student->name, 0, 1) }}
-                                            </div>
-                                            <div>
-                                                <div class="font-medium text-gray-900">{{ $student->name }}</div>
-                                                <div class="text-xs text-gray-500">{{ $student->phone }}</div>
-                                            </div>
+                                $status = $record?->status;
+                                $checkIn = $record?->check_in ? \Carbon\Carbon::parse($record->check_in)->format('H:i') : '';
+                                $checkOut = $record?->check_out ? \Carbon\Carbon::parse($record->check_out)->format('H:i') : '';
+                                $anomaly = (array) ($record?->anomaly_flags ?? []);
+                            @endphp
+                            <tr>
+                                <td class="px-4 py-3">
+                                    <input type="checkbox" wire:model="selectedStudentIds" value="{{ $student->id }}"
+                                        class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                                </td>
+                                <td class="px-4 py-3">
+                                    <p class="text-sm font-semibold text-slate-900">{{ $student->name }}</p>
+                                    <p class="text-xs text-slate-500">{{ $student->phone }}</p>
+                                </td>
+                                <td class="px-4 py-3">
+                                    @if($status)
+                                        <div class="flex flex-wrap items-center gap-1.5">
+                                            <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {{ $status === 'present' ? 'bg-emerald-50 text-emerald-700' : ($status === 'absent' ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-700') }}">
+                                                {{ ucfirst($status) }}
+                                            </span>
+                                            @if(!empty($anomaly['pattern_abuse']))
+                                                <span class="inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">Anomaly</span>
+                                            @endif
                                         </div>
-                                    </td>
-                                    <td class="whitespace-nowrap px-3 py-4">
-                                        <div class="flex items-center gap-2">
-                                            <button wire:click="markAttendance({{ $student->id }}, 'present')"
-                                                class="inline-flex items-center justify-center rounded-md px-3 py-1.5 text-xs font-semibold transition-all duration-200 shadow-sm ring-1 ring-inset {{ $status === 'present' ? 'bg-emerald-500 text-white ring-emerald-500 shadow-emerald-500/20' : 'bg-white text-gray-700 ring-gray-300 hover:bg-emerald-50 hover:text-emerald-700 hover:ring-emerald-200' }}">
-                                                Present
-                                            </button>
-                                            <button wire:click="markAttendance({{ $student->id }}, 'absent')"
-                                                class="inline-flex items-center justify-center rounded-md px-3 py-1.5 text-xs font-semibold transition-all duration-200 shadow-sm ring-1 ring-inset {{ $status === 'absent' ? 'bg-rose-500 text-white ring-rose-500 shadow-rose-500/20' : 'bg-white text-gray-700 ring-gray-300 hover:bg-rose-50 hover:text-rose-700 hover:ring-rose-200' }}">
-                                                Absent
-                                            </button>
-                                            <button wire:click="markAttendance({{ $student->id }}, 'leave')"
-                                                class="inline-flex items-center justify-center rounded-md px-3 py-1.5 text-xs font-semibold transition-all duration-200 shadow-sm ring-1 ring-inset {{ $status === 'leave' ? 'bg-amber-500 text-white ring-amber-500 shadow-amber-500/20' : 'bg-white text-gray-700 ring-gray-300 hover:bg-amber-50 hover:text-amber-700 hover:ring-amber-200' }}">
-                                                Leave
-                                            </button>
-                                        </div>
-                                    </td>
-                                    <td class="whitespace-nowrap px-3 py-4">
-                                        @if($status === 'present')
-                                        <input type="time" title="Check In Time"
-                                            value="{{ $checkIn ? \Carbon\Carbon::parse($checkIn)->format('H:i') : '' }}"
-                                            wire:change="updateTime({{ $student->id }}, 'check_in', $event.target.value)"
-                                            class="block rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 bg-white cursor-pointer hover:bg-gray-50 transition-colors w-32">
-                                        @else
-                                        <span
-                                            class="inline-flex items-center justify-center h-9 w-32 rounded-md bg-gray-50 border border-gray-100 text-gray-400 text-sm font-medium">N/A</span>
-                                        @endif
-                                    </td>
-                                    <td class="whitespace-nowrap px-3 py-4">
-                                        @if($status === 'present')
-                                        <input type="time" title="Check Out Time"
-                                            value="{{ $checkOut ? \Carbon\Carbon::parse($checkOut)->format('H:i') : '' }}"
-                                            wire:change="updateTime({{ $student->id }}, 'check_out', $event.target.value)"
-                                            class="block rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 bg-white cursor-pointer hover:bg-gray-50 transition-colors w-32">
-                                        @else
-                                        <span
-                                            class="inline-flex items-center justify-center h-9 w-32 rounded-md bg-gray-50 border border-gray-100 text-gray-400 text-sm font-medium">N/A</span>
-                                        @endif
-                                    </td>
-                                </tr>
-                                @empty
-                                <tr>
-                                    <td colspan="4" class="px-6 py-12 text-center">
-                                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24"
-                                            stroke="currentColor" aria-hidden="true">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                    @else
+                                        <span class="text-xs text-slate-400">Not Marked</span>
+                                    @endif
+                                </td>
+                                <td class="px-4 py-3 text-sm text-slate-700">{{ $checkIn ?: '-' }}</td>
+                                <td class="px-4 py-3 text-sm text-slate-700">{{ $checkOut ?: '-' }}</td>
+                                <td class="px-4 py-3">
+                                    <div class="flex flex-wrap items-center justify-end gap-2">
+                                        <button wire:click="markAttendance({{ $student->id }}, 'present')" type="button"
+                                            class="rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100">
+                                            Present
+                                        </button>
+                                        <button wire:click="markAttendance({{ $student->id }}, 'absent')" type="button"
+                                            class="rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100">
+                                            Absent
+                                        </button>
+                                        <button wire:click="login({{ $student->id }})" type="button"
+                                            class="rounded-lg border border-sky-200 bg-sky-50 px-2.5 py-1.5 text-xs font-semibold text-sky-700 hover:bg-sky-100">
+                                            Login
+                                        </button>
+                                        <button wire:click="clockOut({{ $student->id }})" type="button"
+                                            class="rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-100">
+                                            Clockout
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="6" class="px-4 py-10">
+                                    <div class="flex flex-col items-center justify-center text-center">
+                                        <svg class="h-10 w-10 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                                         </svg>
-                                        <h3 class="mt-4 text-sm font-semibold text-gray-900">No students found</h3>
-                                        <p class="mt-1 text-sm text-gray-500">Add some students to start tracking
-                                            attendance.</p>
-                                    </td>
-                                </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                                        <p class="mt-3 text-sm font-semibold text-slate-700">No students found for your library/search.</p>
+                                        <p class="mt-1 text-xs text-slate-500">Try clearing search filters or add students first.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>

@@ -10,6 +10,10 @@ class FeePayment extends Model
         'tenant_id',
         'user_id',
         'amount',
+        'gross_amount',
+        'discount_amount',
+        'referral_credit_used',
+        'promo_code_id',
         'payment_date',
         'payment_method',
         'transaction_id',
@@ -42,5 +46,10 @@ class FeePayment extends Model
     public function student()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function promoCode()
+    {
+        return $this->belongsTo(PromoCode::class, 'promo_code_id');
     }
 }

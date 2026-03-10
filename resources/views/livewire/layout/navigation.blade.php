@@ -16,21 +16,19 @@ new class extends Component
     }
 }; ?>
 
-<div x-data="{ mobileMenuOpen: false }">
+<div x-data="{ mobileMenuOpen: false }" class="relative z-40">
     <!-- Mobile overlay -->
     <div x-show="mobileMenuOpen" x-transition.opacity
         class="fixed inset-0 z-40 bg-gray-900/80 backdrop-blur-sm md:hidden" @click="mobileMenuOpen = false"></div>
 
     <!-- Sidebar -->
     <aside :class="mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'"
-        class="fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-slate-300 transition-transform duration-300 ease-in-out md:translate-x-0 flex flex-col border-r border-slate-800">
+        class="fixed inset-y-0 left-0 z-50 w-64 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-300 transition-transform duration-300 ease-in-out md:translate-x-0 flex flex-col border-r border-slate-800/80 shadow-xl shadow-black/40">
         <!-- Logo Area -->
-        <div class="flex h-16 shrink-0 items-center px-6 bg-slate-950/50 border-b border-slate-800">
+        <div class="flex h-16 shrink-0 items-center px-6 bg-slate-950/70 border-b border-slate-800/80">
             <a href="{{ route('dashboard') }}" class="flex items-center gap-3 transition-opacity hover:opacity-80"
                 wire:navigate>
-                <div class="bg-indigo-500 text-white rounded-lg p-1.5 flex items-center justify-center"
-                    @if(isset($globalSettings['primary_color']))
-                    style="background-color: {{ $globalSettings['primary_color'] }}" @endif>
+                <div class="bg-indigo-500 text-white rounded-xl p-1.5 flex items-center justify-center shadow-inner shadow-indigo-900/60">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4">
@@ -110,14 +108,88 @@ new class extends Component
                 Reports & Analytics
             </a>
 
-            <a href="{{ route('admin.support') }}" wire:navigate
-                class="{{ request()->routeIs('admin.support') ? 'bg-indigo-600/10 text-indigo-400 font-semibold' : 'hover:bg-slate-800/50 hover:text-white font-medium' }} group flex items-center px-3 py-2.5 text-sm rounded-lg transition-all duration-200">
-                <svg class="w-5 h-5 mr-3 shrink-0 {{ request()->routeIs('admin.support') ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300' }} transition-colors"
+            @if(\App\Models\Setting::getBool('enable_blog', false))
+            <a href="{{ route('admin.blog') }}" wire:navigate
+                class="{{ request()->routeIs('admin.blog') ? 'bg-indigo-600/10 text-indigo-400 font-semibold' : 'hover:bg-slate-800/50 hover:text-white font-medium' }} group flex items-center px-3 py-2.5 text-sm rounded-lg transition-all duration-200">
+                <svg class="w-5 h-5 mr-3 shrink-0 {{ request()->routeIs('admin.blog') ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300' }} transition-colors"
                     fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                        d="M4 6h16M4 10h10M4 14h10M4 18h6" />
                 </svg>
-                Support Tickets
+                Platform Blog
+            </a>
+            @endif
+
+            <a href="{{ route('admin.campaigns') }}" wire:navigate
+                class="{{ request()->routeIs('admin.campaigns') ? 'bg-indigo-600/10 text-indigo-400 font-semibold' : 'hover:bg-slate-800/50 hover:text-white font-medium' }} group flex items-center px-3 py-2.5 text-sm rounded-lg transition-all duration-200">
+                <svg class="w-5 h-5 mr-3 shrink-0 {{ request()->routeIs('admin.campaigns') ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300' }} transition-colors"
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M3 10l9-6 9 6-9 6-9-6zm0 4l9 6 9-6" />
+                </svg>
+                Campaign Manager
+            </a>
+
+            <a href="{{ route('admin.exports') }}" wire:navigate
+                class="{{ request()->routeIs('admin.exports') ? 'bg-indigo-600/10 text-indigo-400 font-semibold' : 'hover:bg-slate-800/50 hover:text-white font-medium' }} group flex items-center px-3 py-2.5 text-sm rounded-lg transition-all duration-200">
+                <svg class="w-5 h-5 mr-3 shrink-0 {{ request()->routeIs('admin.exports') ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300' }} transition-colors"
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 16V4m0 12l-4-4m4 4l4-4M4 20h16" />
+                </svg>
+                Data Exports
+            </a>
+
+            <a href="{{ route('admin.ops-monitor') }}" wire:navigate
+                class="{{ request()->routeIs('admin.ops-monitor') ? 'bg-indigo-600/10 text-indigo-400 font-semibold' : 'hover:bg-slate-800/50 hover:text-white font-medium' }} group flex items-center px-3 py-2.5 text-sm rounded-lg transition-all duration-200">
+                <svg class="w-5 h-5 mr-3 shrink-0 {{ request()->routeIs('admin.ops-monitor') ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300' }} transition-colors"
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9.75 3v2.25M14.25 3v2.25M4.5 9h15M4.5 19.5h15M6.75 6.75h10.5A2.25 2.25 0 0119.5 9v6A2.25 2.25 0 0117.25 17.25H6.75A2.25 2.25 0 014.5 15V9a2.25 2.25 0 012.25-2.25z" />
+                </svg>
+                Ops Monitor
+            </a>
+
+            <a href="{{ route('admin.disaster-readiness') }}" wire:navigate
+                class="{{ request()->routeIs('admin.disaster-readiness') ? 'bg-indigo-600/10 text-indigo-400 font-semibold' : 'hover:bg-slate-800/50 hover:text-white font-medium' }} group flex items-center px-3 py-2.5 text-sm rounded-lg transition-all duration-200">
+                <svg class="w-5 h-5 mr-3 shrink-0 {{ request()->routeIs('admin.disaster-readiness') ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300' }} transition-colors"
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 7h16M4 12h16M4 17h16" />
+                </svg>
+                Disaster Readiness
+            </a>
+
+            <a href="{{ route('admin.attendance-risk') }}" wire:navigate
+                class="{{ request()->routeIs('admin.attendance-risk') ? 'bg-indigo-600/10 text-indigo-400 font-semibold' : 'hover:bg-slate-800/50 hover:text-white font-medium' }} group flex items-center px-3 py-2.5 text-sm rounded-lg transition-all duration-200">
+                <svg class="w-5 h-5 mr-3 shrink-0 {{ request()->routeIs('admin.attendance-risk') ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300' }} transition-colors"
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 9v3m0 4h.01M3 12a9 9 0 1118 0 9 9 0 01-18 0z" />
+                </svg>
+                Attendance Risk
+            </a>
+
+            @if(\App\Models\Setting::getBool('enable_support_tickets', false))
+                <a href="{{ route('admin.support') }}" wire:navigate
+                    class="{{ request()->routeIs('admin.support') ? 'bg-indigo-600/10 text-indigo-400 font-semibold' : 'hover:bg-slate-800/50 hover:text-white font-medium' }} group flex items-center px-3 py-2.5 text-sm rounded-lg transition-all duration-200">
+                    <svg class="w-5 h-5 mr-3 shrink-0 {{ request()->routeIs('admin.support') ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300' }} transition-colors"
+                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                    </svg>
+                    Support Tickets
+                </a>
+            @endif
+
+            <a href="{{ route('admin.notices') }}" wire:navigate
+                class="{{ request()->routeIs('admin.notices') ? 'bg-indigo-600/10 text-indigo-400 font-semibold' : 'hover:bg-slate-800/50 hover:text-white font-medium' }} group flex items-center px-3 py-2.5 text-sm rounded-lg transition-all duration-200">
+                <svg class="w-5 h-5 mr-3 shrink-0 {{ request()->routeIs('admin.notices') ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300' }} transition-colors"
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M15 17h5l-1.4-1.4a2 2 0 01-.6-1.4V11a6 6 0 10-12 0v3.2a2 2 0 01-.6 1.4L4 17h5m6 0a3 3 0 11-6 0m6 0H9" />
+                </svg>
+                Notices
             </a>
 
             <a href="{{ route('admin.settings') }}" wire:navigate
@@ -168,14 +240,24 @@ new class extends Component
                 Students
             </a>
 
+            <a href="{{ route('library.attendance.mark') }}" wire:navigate
+                class="{{ request()->routeIs('library.attendance.mark') ? 'bg-indigo-600/10 text-indigo-400 font-semibold' : 'hover:bg-slate-800/50 hover:text-white font-medium' }} group flex items-center px-3 py-2.5 text-sm rounded-lg transition-all duration-200">
+                <svg class="w-5 h-5 mr-3 shrink-0 {{ request()->routeIs('library.attendance.mark') ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300' }} transition-colors"
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                Mark Attendance
+            </a>
+
             <a href="{{ route('library.attendance') }}" wire:navigate
                 class="{{ request()->routeIs('library.attendance') ? 'bg-indigo-600/10 text-indigo-400 font-semibold' : 'hover:bg-slate-800/50 hover:text-white font-medium' }} group flex items-center px-3 py-2.5 text-sm rounded-lg transition-all duration-200">
                 <svg class="w-5 h-5 mr-3 shrink-0 {{ request()->routeIs('library.attendance') ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300' }} transition-colors"
                     fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        d="M9 17v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6m6 0a2 2 0 002 2h2a2 2 0 002-2m-4 0V9a2 2 0 012-2h2a2 2 0 012 2v8" />
                 </svg>
-                Attendance
+                Attendance View
             </a>
 
             <a href="{{ route('library.leaves') }}" wire:navigate
@@ -208,6 +290,36 @@ new class extends Component
                 Fee Collection
             </a>
 
+            <a href="{{ route('library.exports') }}" wire:navigate
+                class="{{ request()->routeIs('library.exports') ? 'bg-indigo-600/10 text-indigo-400 font-semibold' : 'hover:bg-slate-800/50 hover:text-white font-medium' }} group flex items-center px-3 py-2.5 text-sm rounded-lg transition-all duration-200">
+                <svg class="w-5 h-5 mr-3 shrink-0 {{ request()->routeIs('library.exports') ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300' }} transition-colors"
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 16V4m0 12l-4-4m4 4l4-4M4 20h16" />
+                </svg>
+                Data Exports
+            </a>
+
+            <a href="{{ route('library.leads') }}" wire:navigate
+                class="{{ request()->routeIs('library.leads') ? 'bg-indigo-600/10 text-indigo-400 font-semibold' : 'hover:bg-slate-800/50 hover:text-white font-medium' }} group flex items-center px-3 py-2.5 text-sm rounded-lg transition-all duration-200">
+                <svg class="w-5 h-5 mr-3 shrink-0 {{ request()->routeIs('library.leads') ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300' }} transition-colors"
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M7 8h10M7 12h6m-8 8h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                Leads
+            </a>
+
+            <a href="{{ route('library.notices') }}" wire:navigate
+                class="{{ request()->routeIs('library.notices') ? 'bg-indigo-600/10 text-indigo-400 font-semibold' : 'hover:bg-slate-800/50 hover:text-white font-medium' }} group flex items-center px-3 py-2.5 text-sm rounded-lg transition-all duration-200">
+                <svg class="w-5 h-5 mr-3 shrink-0 {{ request()->routeIs('library.notices') ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300' }} transition-colors"
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M15 17h5l-1.4-1.4a2 2 0 01-.6-1.4V11a6 6 0 10-12 0v3.2a2 2 0 01-.6 1.4L4 17h5m6 0a3 3 0 11-6 0m6 0H9" />
+                </svg>
+                Notices
+            </a>
+
             <a href="{{ route('library.settings') }}" wire:navigate
                 class="{{ request()->routeIs('library.settings') ? 'bg-indigo-600/10 text-indigo-400 font-semibold' : 'hover:bg-slate-800/50 hover:text-white font-medium' }} group flex items-center px-3 py-2.5 text-sm rounded-lg transition-all duration-200">
                 <svg class="w-5 h-5 mr-3 shrink-0 {{ request()->routeIs('library.settings') ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300' }} transition-colors"
@@ -219,6 +331,17 @@ new class extends Component
                 </svg>
                 Library Settings
             </a>
+            @if(\App\Models\Setting::getBool('enable_support_tickets', false))
+            <a href="{{ route('library.support') }}" wire:navigate
+                class="{{ request()->routeIs('library.support') ? 'bg-indigo-600/10 text-indigo-400 font-semibold' : 'hover:bg-slate-800/50 hover:text-white font-medium' }} group flex items-center px-3 py-2.5 text-sm rounded-lg transition-all duration-200">
+                <svg class="w-5 h-5 mr-3 shrink-0 {{ request()->routeIs('library.support') ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300' }} transition-colors"
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                </svg>
+                Support
+            </a>
+            @endif
             @endif
 
             @if(auth()->user()->role === 'student')
@@ -265,6 +388,28 @@ new class extends Component
                 </svg>
                 Leave Requests
             </a>
+
+            <a href="{{ route('student.notices') }}" wire:navigate
+                class="{{ request()->routeIs('student.notices') ? 'bg-indigo-600/10 text-indigo-400 font-semibold' : 'hover:bg-slate-800/50 hover:text-white font-medium' }} group flex items-center px-3 py-2.5 text-sm rounded-lg transition-all duration-200">
+                <svg class="w-5 h-5 mr-3 shrink-0 {{ request()->routeIs('student.notices') ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300' }} transition-colors"
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M15 17h5l-1.4-1.4a2 2 0 01-.6-1.4V11a6 6 0 10-12 0v3.2a2 2 0 01-.6 1.4L4 17h5m6 0a3 3 0 11-6 0m6 0H9" />
+                </svg>
+                Notices
+            </a>
+
+            @if(\App\Models\Setting::getBool('enable_support_tickets', false))
+            <a href="{{ route('student.support') }}" wire:navigate
+                class="{{ request()->routeIs('student.support') ? 'bg-indigo-600/10 text-indigo-400 font-semibold' : 'hover:bg-slate-800/50 hover:text-white font-medium' }} group flex items-center px-3 py-2.5 text-sm rounded-lg transition-all duration-200">
+                <svg class="w-5 h-5 mr-3 shrink-0 {{ request()->routeIs('student.support') ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300' }} transition-colors"
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                Support
+            </a>
+            @endif
             @endif
         </nav>
 

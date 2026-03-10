@@ -20,7 +20,7 @@ class StudentPanelTest extends TestCase
 
         $this->get(route('student.dashboard'))
             ->assertOk()
-            ->assertSee('Student Dashboard');
+            ->assertSee('Welcome, '.$student->name);
     }
 
     public function test_non_student_cannot_access_student_dashboard(): void
@@ -35,4 +35,3 @@ class StudentPanelTest extends TestCase
             ->assertForbidden();
     }
 }
-

@@ -1,0 +1,31 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\BlogPost;
+use Illuminate\Http\Request;
+use Illuminate\View\View;
+
+class BlogController extends Controller
+{
+    public function index(Request $request): View
+    {
+        $posts = BlogPost::query()
+            ->where('is_published', true)
+            ->orderByDesc('published_at')
+            ->paginate(9);
+
+        return view('blog.index', compact('posts'));
+    }
+
+    public function show(string $slug): View
+    {
+        $post = BlogPost::query()
+            ->where('slug', $slug)
+            ->where('is_published', true)
+            ->firstOrFail();
+
+        return view('blog.show', compact('post'));
+    }
+}
+

@@ -5,6 +5,7 @@ namespace Tests\Feature\Api;
 use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class AuthMethodsTest extends TestCase
@@ -79,5 +80,27 @@ class AuthMethodsTest extends TestCase
                     'phone_otp' => false,
                 ],
             ]);
+    }
+
+    public function test_authenticated_user_can_update_push_token(): void
+    {
+        $user = User::factory()->create();
+        Sanctum::actingAs($user);
+
+        $response = $this->postJson('/api/push/token', [
+            'fcm_token' => 'demo-token-123',
+        ]);
+
+        $response
+            ->assertOk()
+            ->assertJson([
+                'message' => 'Push token updated successfully',
+                'fcm_token' => 'demo-token-123',
+            ]);
+
+        $this->assertDatabaseHas('users', [
+            'id' => $user->id,
+            'fcm_token' => 'demo-token-123',
+        ]);
     }
 }

@@ -6,6 +6,7 @@ use App\Models\FeePayment;
 use App\Models\LibraryPlan;
 use App\Models\User;
 use App\Services\AuditLogService;
+use App\Services\PromoEngineService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
@@ -161,7 +162,7 @@ class Fees extends Component
                 return;
             }
 
-            $payment = FeePayment::create([
+            $createPayload = [
                 'tenant_id' => $tenantId,
                 'user_id' => $this->user_id,
                 'amount' => $plan->price,
@@ -172,10 +173,23 @@ class Fees extends Component
                 'net_amount' => $plan->price,
                 'transaction_id' => $this->transaction_id,
                 'remarks' => trim($this->remarks.' (Manual invoice for '.$plan->name.')'),
-            ]);
+            ];
+            if (\Illuminate\Support\Facades\Schema::hasColumn('fee_payments', 'gross_amount')) {
+                $createPayload['gross_amount'] = $plan->price;
+            }
+            if (\Illuminate\Support\Facades\Schema::hasColumn('fee_payments', 'discount_amount')) {
+                $createPayload['discount_amount'] = 0;
+            }
+            if (\Illuminate\Support\Facades\Schema::hasColumn('fee_payments', 'referral_credit_used')) {
+                $createPayload['referral_credit_used'] = 0;
+            }
+            $payment = FeePayment::create($createPayload);
 
             if ($payment->status === 'paid' && $payment->user) {
                 $payment->user->notify(new \App\Notifications\FeePaymentReceipt($payment));
+                if (\Illuminate\Support\Facades\Schema::hasTable('referrals')) {
+                    app(PromoEngineService::class)->markConversionAndIssueCredit($payment);
+                }
             }
         } else {
             // Updating existing
@@ -224,6 +238,9 @@ class Fees extends Component
 
             if (! $wasPaid && $payment->status === 'paid' && $payment->user) {
                 $payment->user->notify(new \App\Notifications\FeePaymentReceipt($payment));
+                if (\Illuminate\Support\Facades\Schema::hasTable('referrals')) {
+                    app(PromoEngineService::class)->markConversionAndIssueCredit($payment);
+                }
             }
         }
 

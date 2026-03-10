@@ -17,14 +17,25 @@ class StudentAttendance extends Model
         'status',
         'check_in',
         'check_out',
+        'action_ip',
+        'action_device',
+        'action_latitude',
+        'action_longitude',
+        'anomaly_flags',
     ];
 
     protected $casts = [
         'date' => 'date',
+        'anomaly_flags' => 'array',
     ];
 
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function tenant()
+    {
+        return $this->belongsTo(Tenant::class);
     }
 }

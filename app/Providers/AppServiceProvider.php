@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +22,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        RateLimiter::for('public-library-contact', function (Request $request) {
+            $slug = (string) $request->route('slug');
+
+            return Limit::perMinute(8)->by($request->ip().'|'.$slug);
+        });
+
         \Illuminate\Support\Facades\View::composer('*', function ($view) {
             static $globalSettings = null;
 

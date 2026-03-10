@@ -2,6 +2,9 @@
 
 namespace App\Notifications;
 
+use App\Services\NotificationChannelService;
+use App\Services\NotificationTemplateService;
+use App\Models\Setting;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -28,6 +31,14 @@ class FeePaymentReceipt extends Notification
      */
     public function via(object $notifiable): array
     {
+        $channelsConfig = app(NotificationChannelService::class);
+        if (
+            ! $channelsConfig->canSend(NotificationChannelService::EVENT_FEE_PAYMENT_RECEIPT, 'email')
+            || empty($notifiable->email)
+        ) {
+            return [];
+        }
+
         return ['mail'];
     }
 
@@ -37,18 +48,27 @@ class FeePaymentReceipt extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         $tenantName = $this->payment->tenant->name ?? 'Library';
-        $formattedAmount = number_format($this->payment->amount, 2);
+        $formattedAmount = Setting::getCurrencySymbol('$').number_format((float) $this->payment->amount, 2);
+        $rendered = app(NotificationTemplateService::class)->render(
+            NotificationChannelService::EVENT_FEE_PAYMENT_RECEIPT,
+            'email',
+            [
+                'app_name' => Setting::getValue('app_name', 'ZypCRM'),
+                'site_title' => Setting::getValue('site_title', 'ZypCRM'),
+                'user_name' => $notifiable->name,
+                'tenant_name' => $tenantName,
+                'dashboard_url' => url('/dashboard'),
+                'date' => now()->format('M d, Y'),
+                'amount' => $formattedAmount,
+                'payment_date' => \Carbon\Carbon::parse($this->payment->payment_date)->format('M d, Y'),
+                'payment_method' => ucfirst((string) $this->payment->payment_method),
+                'payment_status' => ucfirst((string) $this->payment->status),
+            ]
+        );
 
         return (new MailMessage)
-            ->subject("Payment Receipt - {$tenantName}")
-            ->greeting("Hello {$notifiable->name},")
-            ->line("We have received your payment of {$formattedAmount}.")
-            ->line("Payment Details:")
-            ->line("- Date: " . \Carbon\Carbon::parse($this->payment->payment_date)->format('M d, Y'))
-            ->line("- Method: " . ucfirst($this->payment->payment_method))
-            ->line("- Status: " . ucfirst($this->payment->status))
-            ->action('View Dashboard', url('/dashboard'))
-            ->line("Thank you for choosing {$tenantName}!");
+            ->subject($rendered['subject'] ?: "Payment Receipt - {$tenantName}")
+            ->view('emails.dynamic-template', ['html' => $rendered['body']]);
     }
 
     /**
