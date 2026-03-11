@@ -21,6 +21,17 @@ class AuthController extends Controller
         ];
     }
 
+    /**
+     * Public endpoint so mobile/app can discover platform auth settings without calling login first.
+     */
+    public function authConfig()
+    {
+        return response()->json([
+            'allowed_login_methods' => $this->allowedLoginMethods(),
+            'allow_registration' => Setting::getBool('allow_registration', true),
+        ]);
+    }
+
     public function registerLibraryOwner(Request $request)
     {
         if (! Setting::getBool('allow_registration', true)) {

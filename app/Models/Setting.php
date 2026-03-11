@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Schema;
 
 class Setting extends Model
 {
@@ -22,6 +23,9 @@ class Setting extends Model
 
     public static function getValue(string $key, ?string $default = null): ?string
     {
+        if (! Schema::hasTable((new static)->getTable())) {
+            return $default;
+        }
         return Cache::remember("setting:{$key}", now()->addMinutes(10), function () use ($key, $default) {
             return static::where('key', $key)->value('value') ?? $default;
         });

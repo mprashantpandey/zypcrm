@@ -1,6 +1,7 @@
 <IfModule mod_rewrite.c>
     Options +FollowSymLinks
     RewriteEngine On
+    RewriteBase /
 
     # If your Laravel app is inside a subfolder on cPanel,
     # and the document root points to this folder (not to public/),

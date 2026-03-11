@@ -14,16 +14,38 @@ new #[Layout('layouts.guest')] class extends Component
     public array $allowedMethods = [];
     public bool $showDevTools = false;
     public array $demoUsers = [];
+    public bool $phoneOtpEnabled = false;
+    public array $firebaseConfig = [];
 
     public function mount(): void
     {
         $emailPasswordEnabled = Setting::getBool('email_password_auth_enabled', true);
         $phoneOtpEnabled = Setting::getBool('firebase_enabled', false) && Setting::getBool('firebase_phone_auth_enabled', false);
 
+        $this->phoneOtpEnabled = $phoneOtpEnabled;
+
         $this->allowedMethods = array_filter([
             $emailPasswordEnabled ? 'Email/Password' : null,
-            $phoneOtpEnabled ? 'Phone OTP' : null,
+            $phoneOtpEnabled ? 'Phone OTP (web & mobile)' : null,
         ]);
+
+        if ($phoneOtpEnabled) {
+            $serviceJson = Setting::getValue('firebase_service_account_json', null);
+            $projectId = null;
+            if (! empty($serviceJson)) {
+                $decoded = json_decode($serviceJson, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $projectId = $decoded['project_id'] ?? null;
+                }
+            }
+
+            $this->firebaseConfig = [
+                'apiKey' => Setting::getValue('firebase_api_key'),
+                'authDomain' => Setting::getValue('firebase_auth_domain'),
+                'appId' => Setting::getValue('firebase_app_id'),
+                'projectId' => $projectId,
+            ];
+        }
 
         $this->showDevTools = app()->environment(['local', 'development']);
 
@@ -172,4 +194,196 @@ new #[Layout('layouts.guest')] class extends Component
             </button>
         </div>
     </form>
+
+    @if ($phoneOtpEnabled && ! empty($firebaseConfig['apiKey']) && ! empty($firebaseConfig['authDomain']) && ! empty($firebaseConfig['appId']))
+        <div class="mt-10 border-t border-slate-200 pt-8">
+            <h2 class="text-sm font-semibold text-slate-900">Or sign in with Phone OTP</h2>
+            <p class="mt-1 text-xs text-slate-500">
+                Uses Firebase phone authentication. Enter your phone number and verify the OTP to sign in.
+            </p>
+
+            <div id="phone-otp-login" class="mt-4 space-y-4">
+                <div>
+                    <label for="phone-login-number" class="block text-sm font-medium text-slate-900">Phone number</label>
+                    <input id="phone-login-number"
+                           type="tel"
+                           class="mt-2 block w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                           placeholder="+91 84491 83686">
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <button id="phone-login-send-otp"
+                            type="button"
+                            class="inline-flex items-center justify-center rounded-xl bg-slate-800 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2">
+                        Send OTP
+                    </button>
+                    <span id="phone-login-status"
+                          class="text-xs text-slate-500"></span>
+                </div>
+
+                <div id="phone-login-otp-section" class="hidden space-y-3">
+                    <div>
+                        <label for="phone-login-otp" class="block text-sm font-medium text-slate-900">Enter OTP</label>
+                        <input id="phone-login-otp"
+                               type="text"
+                               maxlength="6"
+                               class="mt-2 block w-40 rounded-xl border border-slate-300 px-3 py-2.5 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                               placeholder="123456">
+                    </div>
+                    <button id="phone-login-verify-otp"
+                            type="button"
+                            class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2">
+                        Verify & Sign In
+                    </button>
+                </div>
+            </div>
+
+            <div id="phone-login-recaptcha-container"></div>
+        </div>
+
+        @php
+            $firebaseConfigJson = json_encode($firebaseConfig, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        @endphp
+
+        <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const cfg = {!! $firebaseConfigJson !!};
+                if (!cfg || !cfg.apiKey || !cfg.authDomain || !cfg.appId) {
+                    return;
+                }
+
+                if (!window.firebase || !window.firebase.initializeApp) {
+                    console.error('Firebase SDK not loaded');
+                    return;
+                }
+
+                let firebaseApp;
+                try {
+                    firebaseApp = firebase.apps.length ? firebase.app() : firebase.initializeApp(cfg);
+                } catch (e) {
+                    console.error('Failed to init Firebase app', e);
+                    return;
+                }
+
+                const auth = firebase.auth(firebaseApp);
+
+                const phoneInput = document.getElementById('phone-login-number');
+                const sendOtpBtn = document.getElementById('phone-login-send-otp');
+                const otpSection = document.getElementById('phone-login-otp-section');
+                const otpInput = document.getElementById('phone-login-otp');
+                const verifyOtpBtn = document.getElementById('phone-login-verify-otp');
+                const statusEl = document.getElementById('phone-login-status');
+
+                if (!phoneInput || !sendOtpBtn || !otpSection || !otpInput || !verifyOtpBtn || !statusEl) {
+                    return;
+                }
+
+                let confirmationResult = null;
+                let sending = false;
+
+                function setStatus(message, isError) {
+                    statusEl.textContent = message || '';
+                    statusEl.classList.toggle('text-rose-600', !!isError);
+                    statusEl.classList.toggle('text-slate-500', !isError);
+                }
+
+                function setSending(isSending) {
+                    sending = isSending;
+                    sendOtpBtn.disabled = isSending;
+                    verifyOtpBtn.disabled = isSending;
+                    sendOtpBtn.classList.toggle('opacity-60', isSending);
+                    verifyOtpBtn.classList.toggle('opacity-60', isSending);
+                }
+
+                function ensureRecaptcha() {
+                    if (window.recaptchaVerifier) {
+                        return window.recaptchaVerifier;
+                    }
+                    window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('phone-login-recaptcha-container', {
+                        'size': 'invisible'
+                    }, auth);
+                    return window.recaptchaVerifier;
+                }
+
+                sendOtpBtn.addEventListener('click', function () {
+                    if (sending) return;
+                    const raw = phoneInput.value.trim();
+                    if (!raw) {
+                        setStatus('Enter phone number', true);
+                        return;
+                    }
+                    const phone = raw.startsWith('+') ? raw : '+91' + raw;
+                    setSending(true);
+                    setStatus('Sending OTP...', false);
+
+                    const verifier = ensureRecaptcha();
+
+                    auth.signInWithPhoneNumber(phone, verifier)
+                        .then(function (result) {
+                            confirmationResult = result;
+                            otpSection.classList.remove('hidden');
+                            setStatus('OTP sent. Please check your phone.', false);
+                            setSending(false);
+                        })
+                        .catch(function (error) {
+                            console.error(error);
+                            setStatus(error.message || 'Failed to send OTP', true);
+                            setSending(false);
+                        });
+                });
+
+                verifyOtpBtn.addEventListener('click', function () {
+                    if (sending) return;
+                    if (!confirmationResult) {
+                        setStatus('Please request OTP first.', true);
+                        return;
+                    }
+                    const code = otpInput.value.trim();
+                    if (!code) {
+                        setStatus('Enter the OTP code', true);
+                        return;
+                    }
+                    setSending(true);
+                    setStatus('Verifying OTP...', false);
+
+                    confirmationResult.confirm(code)
+                        .then(function (result) {
+                            return result.user.getIdToken();
+                        })
+                        .then(function (idToken) {
+                            return fetch('/api/auth/firebase', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Accept': 'application/json',
+                                },
+                                body: JSON.stringify({ firebase_id_token: idToken })
+                            });
+                        })
+                        .then(function (res) {
+                            return res.json().then(function (data) {
+                                return { ok: res.ok, data: data };
+                            });
+                        })
+                        .then(function (resp) {
+                            if (!resp.ok) {
+                                throw new Error(resp.data && resp.data.message ? resp.data.message : 'Login failed');
+                            }
+                            const token = resp.data && resp.data.access_token;
+                            if (!token) {
+                                throw new Error('Missing access token from server');
+                            }
+                            window.location.href = '/login/phone/callback?token=' + encodeURIComponent(token);
+                        })
+                        .catch(function (error) {
+                            console.error(error);
+                            setStatus(error.message || 'Login failed', true);
+                            setSending(false);
+                        });
+                });
+            });
+        </script>
+    @endif
 </div>

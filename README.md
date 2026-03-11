@@ -62,13 +62,29 @@ Critical actions are logged (role-aware), including:
 - Fee payment updates
 - Seat unassign
 
-## API Enhancements
+## API (Mobile / External)
 
-Tenant APIs support:
-- Pagination (`per_page`)
-- Sorting (`sort_by`, `sort_dir`)
+Base path: `/api` (e.g. `POST /api/login`, `GET /api/tenant/students`).
 
-Applied on major resources like students, seats, and fees.
+### Auth and rate limiting
+
+- **GET /api/auth/config** — Public; returns `{ "allowed_login_methods": { "email_password": true, "phone_otp": false } }`. Use this so the app can show the correct login options without calling login first.
+- **Public auth routes** (register, login, auth/firebase) are limited to **10 requests per minute per IP**.
+- **Protected routes** (tenant/*, student/*) are limited to **60 requests per minute per user**.
+
+### Tenant APIs
+
+- Pagination: `?per_page=15` (max 100).
+- Sorting: `?sort_by=name&sort_dir=asc` (or `desc`).
+
+Applied on students, seats, and fees.
+
+### Possible improvements
+
+- **CORS**: If the mobile app or a web app on another domain calls the API, ensure `config/cors.php` (or env) allows that origin. Laravel’s default allows same-origin; for production you may set `SANCTUM_STATEFUL_DOMAINS` or CORS allowed origins.
+- **API versioning**: Introduce `/api/v1/` when you need backward-incompatible changes.
+- **Consistent error format**: Use a single JSON shape for validation/errors (e.g. `{ "message": "...", "errors": { "field": ["..."] } }`) so clients can parse uniformly.
+- **Student email uniqueness**: Currently `email` is unique globally. If you want the same email in different tenants, scope the unique rule by `tenant_id`.
 
 ## Scheduler Jobs
 
