@@ -40,10 +40,10 @@ new #[Layout('layouts.guest')] class extends Component
             }
 
             $this->firebaseConfig = [
-                'apiKey' => Setting::getValue('firebase_api_key'),
-                'authDomain' => Setting::getValue('firebase_auth_domain'),
-                'appId' => Setting::getValue('firebase_app_id'),
-                'projectId' => $projectId,
+                'apiKey' => trim((string) Setting::getValue('firebase_api_key', '')),
+                'authDomain' => trim((string) Setting::getValue('firebase_auth_domain', '')),
+                'appId' => trim((string) Setting::getValue('firebase_app_id', '')),
+                'projectId' => $projectId ? trim((string) $projectId) : null,
             ];
         }
 
@@ -245,14 +245,18 @@ new #[Layout('layouts.guest')] class extends Component
             $firebaseConfigJson = json_encode($firebaseConfig, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
         @endphp
 
-        <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-        <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+        {{-- Firebase JS SDK (compat) – pinned to latest major 12.x --}}
+        <script src="https://www.gstatic.com/firebasejs/12.10.0/firebase-app-compat.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/12.10.0/firebase-auth-compat.js"></script>
         <script>
             document.addEventListener('DOMContentLoaded', function () {
                 const cfg = {!! $firebaseConfigJson !!};
                 if (!cfg || !cfg.apiKey || !cfg.authDomain || !cfg.appId) {
                     return;
                 }
+
+                // Expose for debugging in browser console (window._firebaseCfg)
+                window._firebaseCfg = cfg;
 
                 if (!window.firebase || !window.firebase.initializeApp) {
                     console.error('Firebase SDK not loaded');
@@ -375,7 +379,32 @@ new #[Layout('layouts.guest')] class extends Component
                             if (!token) {
                                 throw new Error('Missing access token from server');
                             }
-                            window.location.href = '/login/phone/callback?token=' + encodeURIComponent(token);
+                            var csrf = document.querySelector('meta[name="csrf-token"]');
+                            return fetch('/login/phone/callback', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Accept': 'application/json',
+                                    'X-Requested-With': 'XMLHttpRequest',
+                                    'X-CSRF-TOKEN': (csrf && csrf.getAttribute('content')) || ''
+                                },
+                                body: JSON.stringify({ token: token })
+                            });
+                        })
+                        .then(function (res) {
+                            return res.json().then(function (data) {
+                                return { ok: res.ok, data: data };
+                            });
+                        })
+                        .then(function (resp) {
+                            if (!resp.ok) {
+                                throw new Error(resp.data && resp.data.message ? resp.data.message : 'Session setup failed');
+                            }
+                            if (resp.data && resp.data.redirect) {
+                                window.location.href = resp.data.redirect;
+                            } else {
+                                window.location.href = '/dashboard';
+                            }
                         })
                         .catch(function (error) {
                             console.error(error);

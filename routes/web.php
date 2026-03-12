@@ -44,9 +44,8 @@ Route::view('profile', 'profile')
 require __DIR__ . '/auth.php';
 
 // Web callback used after Firebase Phone OTP login in the browser.
-// The browser first calls POST /api/auth/firebase to get a Sanctum token,
-// then redirects here with ?token=... so we can establish a web session.
-Route::get('/login/phone/callback', \App\Http\Controllers\Auth\PhoneOtpWebLoginController::class)
+// POST with JSON { "token": "..." } preferred (token not in URL); GET ?token=... still supported.
+Route::match(['get', 'post'], '/login/phone/callback', \App\Http\Controllers\Auth\PhoneOtpWebLoginController::class)
     ->name('login.phone.callback');
 
 use App\Livewire\Admin\SubscriptionPlans;

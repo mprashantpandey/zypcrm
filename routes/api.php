@@ -14,7 +14,7 @@ Route::middleware('throttle:10,1')->group(function () {
     Route::post('/auth/firebase', [AuthController::class, 'firebaseLogin']);
 });
 
-Route::post('/logout', [AuthController::class , 'logout'])->middleware('auth:sanctum');
+Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 Route::post('/push/token', [AuthController::class, 'updatePushToken'])->middleware('auth:sanctum');
 
 Route::get('/user', function (Request $request) {
