@@ -48,15 +48,24 @@
                         <td class="px-6 py-3 text-sm text-gray-700">{{ $payment->payment_method ?: '-' }}</td>
                         <td class="px-6 py-3 text-sm text-gray-500">{{ $payment->transaction_id ?: '-' }}</td>
                         <td class="px-6 py-3 text-sm">
-                            @if (in_array($payment->status, ['pending', 'overdue'], true) && $payment->slug)
-                                <a href="{{ route('public.pay', $payment->slug) }}"
-                                    class="inline-flex items-center rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-500">
-                                    Pay Now
-                                </a>
-                            @elseif ($payment->status === 'paid')
+                            @if ($payment->status === 'paid')
                                 <span class="inline-flex items-center rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700">
                                     Paid
                                 </span>
+                            @elseif (in_array($payment->status, ['pending', 'overdue'], true))
+                                @if ($payment->slug)
+                                    <a href="{{ route('public.pay', $payment->slug) }}"
+                                        class="inline-flex items-center rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-500">
+                                        Pay online
+                                    </a>
+                                    <span class="ml-2 text-[11px] text-gray-500">
+                                        or wait for the library to mark as paid.
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center rounded-lg bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700">
+                                        Pending (to be recorded by library)
+                                    </span>
+                                @endif
                             @else
                                 <span class="text-xs text-gray-400">Unavailable</span>
                             @endif

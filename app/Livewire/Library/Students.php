@@ -202,6 +202,21 @@ class Students extends Component
         $this->validate($rules);
         $promoEngine = app(PromoEngineService::class);
 
+        // ── Enforce optional max_students limit from tenant's current subscription plan ─────────────
+        if (! $this->studentId) {
+            $tenant = $actor->tenant?->loadMissing('currentSubscription.plan');
+            $maxStudents = $tenant?->currentSubscription?->plan?->max_students ?? 0;
+            if ($maxStudents > 0) {
+                $activeCount = StudentMembership::where('tenant_id', $tenantId)
+                    ->where('status', 'active')
+                    ->count();
+                if ($activeCount >= $maxStudents) {
+                    $this->addError('name', 'You have reached the active student limit for your subscription plan ('.$maxStudents.').');
+                    return;
+                }
+            }
+        }
+
         $studentData = [
             'name' => $this->name,
             'email' => $this->email,

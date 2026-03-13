@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Tenant;
 
 use App\Http\Controllers\Controller;
+use App\Models\Tenant;
 use App\Models\User;
 use App\Services\AuditLogService;
 use Illuminate\Http\Request;
@@ -35,6 +36,21 @@ class StudentController extends Controller
     public function store(Request $request)
     {
         $tenantId = $request->user()->tenant_id;
+
+        // Optional max_students enforcement from tenant's current subscription plan
+        $tenant = Tenant::with('currentSubscription.plan')->find($tenantId);
+        $maxStudents = $tenant?->currentSubscription?->plan?->max_students ?? 0;
+        if ($maxStudents > 0) {
+            $currentCount = User::where('tenant_id', $tenantId)
+                ->where('role', 'student')
+                ->count();
+            if ($currentCount >= $maxStudents) {
+                return response()->json([
+                    'message' => 'Student limit reached for current subscription plan.',
+                ], 422);
+            }
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')],

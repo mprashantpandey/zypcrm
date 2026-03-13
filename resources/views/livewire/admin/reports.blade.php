@@ -99,7 +99,12 @@
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 lg:col-span-2 p-6 h-96">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-base font-semibold text-gray-900">Revenue Trend (Last 12 Months)</h3>
-                    <span class="text-xs text-gray-500">Subscriptions + Fees</span>
+                    <div class="flex flex-col items-end">
+                        <span class="text-xs text-gray-500">Subscriptions + Fees</span>
+                        <span class="mt-1 text-[11px] text-gray-400">
+                            Note: Subscription lines use plan prices (estimated), not invoice totals.
+                        </span>
+                    </div>
                 </div>
                 <canvas id="adminReportsRevenueChart" height="120"></canvas>
             </div>

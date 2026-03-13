@@ -44,6 +44,8 @@ new #[Layout('layouts.guest')] class extends Component
                 'authDomain' => trim((string) Setting::getValue('firebase_auth_domain', '')),
                 'appId' => trim((string) Setting::getValue('firebase_app_id', '')),
                 'projectId' => $projectId ? trim((string) $projectId) : null,
+                // Optional hint for local testing (Firebase Auth supports test phone numbers)
+                'isLocal' => app()->environment(['local', 'development']),
             ];
         }
 
@@ -272,6 +274,14 @@ new #[Layout('layouts.guest')] class extends Component
                 }
 
                 const auth = firebase.auth(firebaseApp);
+                // Improve language matching in OTP/reCAPTCHA flows
+                try { auth.useDeviceLanguage(); } catch (_) {}
+
+                // Local/dev fallback: allow Firebase Auth "test phone numbers" without reCAPTCHA.
+                // (This does NOT allow real SMS in production; it only works with configured test numbers.)
+                if (cfg.isLocal) {
+                    try { auth.settings.appVerificationDisabledForTesting = true; } catch (_) {}
+                }
 
                 const phoneInput = document.getElementById('phone-login-number');
                 const sendOtpBtn = document.getElementById('phone-login-send-otp');
@@ -305,9 +315,20 @@ new #[Layout('layouts.guest')] class extends Component
                     if (window.recaptchaVerifier) {
                         return window.recaptchaVerifier;
                     }
-                    window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('phone-login-recaptcha-container', {
-                        'size': 'invisible'
-                    }, auth);
+                    try {
+                        window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('phone-login-recaptcha-container', {
+                            'size': 'invisible'
+                        }, auth);
+                        // Force render early so we surface verifier errors immediately
+                        window.recaptchaVerifier.render().catch(function (e) {
+                            console.error('Recaptcha render failed', e);
+                            setStatus((e && e.message) ? e.message : 'reCAPTCHA initialization failed', true);
+                        });
+                    } catch (e) {
+                        console.error('RecaptchaVerifier init failed', e);
+                        setStatus((e && e.message) ? e.message : 'reCAPTCHA initialization failed', true);
+                        throw e;
+                    }
                     return window.recaptchaVerifier;
                 }
 

@@ -6,11 +6,14 @@
 <div class="py-12">
     <div class="max-w-xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="bg-white border border-gray-200 rounded-2xl shadow-sm p-8">
-            <h1 class="text-xl font-bold text-gray-900">Razorpay Checkout</h1>
+            <h1 class="text-xl font-bold text-gray-900">Razorpay Checkout (optional)</h1>
             <p class="mt-2 text-sm text-gray-500">
                 Plan: <span class="font-semibold text-gray-700">{{ $plan->name }}</span>
                 <span class="mx-2 text-gray-300">|</span>
                 Amount: <span class="font-semibold text-gray-700">{{ $global_currency }}{{ number_format($plan->price, 2) }}</span>
+            </p>
+            <p class="mt-1 text-xs text-gray-500">
+                You can also collect this payment offline and record it manually in ZypCRM. Online payment is optional.
             </p>
 
             <form id="razorpay-verify-form" method="POST" action="{{ route('subscription.razorpay.verify', $plan) }}" class="hidden">
@@ -22,7 +25,7 @@
 
             <button id="pay-now-btn"
                 class="mt-6 inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500">
-                Pay Now
+                Pay online with Razorpay
             </button>
         </div>
     </div>
